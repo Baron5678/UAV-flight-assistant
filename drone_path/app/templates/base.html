@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="us">
+<head>
+  <meta charset="utf-8" />
+  <title>EA Scouting Path</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+  <body>
+    <main class="layout">
+        <section id="sidebar">
+        <form>
+            <fieldset class="groupbox">
+                <legend>Scouting options</legend>
+                <label for="role">Waypoint's type:</label>
+                <select id="role">
+                    <option>Required</option>
+                    <option selected>Optional</option>
+                    <option>Station</option>
+                </select>
+            </fieldset>
+            <fieldset class="groupbox">
+                <legend>Drone Settings</legend>
+                <label for="speed">Speed:</label>
+                <input id="speed" type="number" min="1" max="99" value="1"/>
+                <label for="energy">Energy level:</label>
+                <input id="energy" type="number" min="1" max="599" value="1"/>
+            </fieldset>
+            <fieldset class="groupbox">
+                <legend>GA Settings</legend>
+                <label for="pop">Population Size:</label>
+                <input id="pop" type="number" min="1" max="99" value="1"/>
+                <label for="gen">Generations:</label>
+                <input id="gen" type="number" min="1" max="599" value="1"/>
+                <label for="fit">Fitness criteria:</label>
+                <select id="fit">
+                    <option selected>Shortest Distance</option>
+                </select>
+                <label for="cost">Best Cost:</label>
+                <input id="cost" type="number" min="1" max="599" value="1" disabled/>
+            </fieldset>
+        </form>
+    </section>
+    <div id="map"></div>
+  </main>
+  <footer class="footer-actions">
+      <button id="btn-generate per path">Generate scouting path per generation</button>
+      <button id="btn-generate">Generate scouting path</button>
+      <button id="btn-reset">Reset points</button>
+  </footer>
+  <div class="stat" id="stats"></div>
+  <script src="{{ url_for('static', path='js/map.js') }}"></script>
+  </body>
+</html>

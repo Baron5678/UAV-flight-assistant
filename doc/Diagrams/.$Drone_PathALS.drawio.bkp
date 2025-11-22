@@ -1,0 +1,58 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.8 Chrome/140.0.7339.240 Electron/38.4.0 Safari/537.36" version="28.2.8">
+  <diagram name="Page-1" id="CJO9K1itvcYMmX8wdO2q">
+    <mxGraphModel dx="1427" dy="974" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-1" value="Application Layer Services" style="swimlane;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="660" y="300" width="1132" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-11" value="WaypointService&#xa;&#xa;&#xa;&#xa;&#xa;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=31;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-1">
+          <mxGeometry x="40" y="59" width="320" height="140" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-12" value="+add(wp: Waypoint): None&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-11">
+          <mxGeometry y="31" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-27" value="+delete(id: int): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-11">
+          <mxGeometry y="57" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-13" value="+list(): Waypoint[*]" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-11">
+          <mxGeometry y="83" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-14" value="+reset(): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-11">
+          <mxGeometry y="109" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-15" value="PathService" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-1">
+          <mxGeometry x="760" y="59" width="340" height="90" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-16" value="+generate(mission: Mission, drone: Drone[1*])" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-15">
+          <mxGeometry y="26" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-17" value="+get_best(mission_id: int) &#xa;&#xa;&#xa;&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-15">
+          <mxGeometry y="52" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-28" value="DroneService&#xa;&#xa;&#xa;&#xa;&#xa;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=31;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-1">
+          <mxGeometry x="400" y="58" width="320" height="140" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-29" value="+add(drone: Drone): None&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-28">
+          <mxGeometry y="31" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-30" value="+delete(id: int): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-28">
+          <mxGeometry y="57" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-31" value="+list(): Drones[*]" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-28">
+          <mxGeometry y="83" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="9e3Po4ZBD76Dwm1D3543-33" value="+update(drone: Drone): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="9e3Po4ZBD76Dwm1D3543-28">
+          <mxGeometry y="109" width="320" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

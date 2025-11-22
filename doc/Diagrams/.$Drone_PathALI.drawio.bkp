@@ -1,0 +1,72 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.8 Chrome/140.0.7339.240 Electron/38.4.0 Safari/537.36" version="28.2.8">
+  <diagram name="Page-1" id="DI14dYPbp1KzeOK-aPD3">
+    <mxGraphModel dx="1563" dy="1164" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-8" value="WaypointRepository&#xa;&lt;&lt;interface&gt;&gt;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="358" y="238" width="321" height="162" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-9" value="+add(wp: Waypoint): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-8">
+          <mxGeometry y="50" width="321" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-10" value="+delete(id: int): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-8">
+          <mxGeometry y="76" width="321" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-12" value="+delete_all(): None&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-8">
+          <mxGeometry y="102" width="321" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-11" value="+get_all(): Waypoint[*]" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-8">
+          <mxGeometry y="128" width="321" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-13" value="Application Layer Interfaces&amp;nbsp;" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="191" width="1090" height="349" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-1" value="MissionRepository&#xa;&lt;&lt;interface&gt;&gt;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=52;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-13">
+          <mxGeometry x="379" y="47" width="320" height="156" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-2" value="+save(m: Mission): Mission&#xa;&#xa;&#xa;&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-1">
+          <mxGeometry y="52" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-3" value="+get(mission_id: int): Mission" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-1">
+          <mxGeometry y="78" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-4" value="+show_statistics(): Plot" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-1">
+          <mxGeometry y="104" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-5" value="+compare(m: Mission): Plot" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-1">
+          <mxGeometry y="130" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-6" value="PathOptomaizer&#xa;&lt;&lt;interface&gt;&gt;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=52;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-13">
+          <mxGeometry x="270" y="247" width="550" height="78" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-7" value="+optimize(mission: Mission, drone: Drone, wp: Waypoint[*]): Path&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-6">
+          <mxGeometry y="52" width="550" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-14" value="DroneRepository&#xa;&lt;&lt;interface&gt;&gt;" style="swimlane;fontStyle=2;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=52;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=1;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-13">
+          <mxGeometry x="740" y="47" width="320" height="163" as="geometry">
+            <mxRectangle x="230" y="140" width="160" height="26" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-19" value="+add(drone: Drone): None&#xa;" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-14">
+          <mxGeometry y="52" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-20" value="+delete(id: int): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-14">
+          <mxGeometry y="78" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-22" value="+update(drone: Drone): None" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-14">
+          <mxGeometry y="104" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="RW9mSYgOjAL-FquyVrnK-21" value="+list(): Drones[*]" style="text;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rounded=0;shadow=0;html=0;labelBackgroundColor=none;fontSize=16;" vertex="1" parent="RW9mSYgOjAL-FquyVrnK-14">
+          <mxGeometry y="130" width="320" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
