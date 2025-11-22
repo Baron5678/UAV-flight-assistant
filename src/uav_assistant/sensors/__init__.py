@@ -15,6 +15,10 @@ from enum import Enum
 import logging
 
 
+# Constants
+GPS_NO_FIX_HDOP = 99.99  # HDOP value indicating no GPS fix available
+
+
 class SensorType(Enum):
     """Sensor type enumeration"""
     IMU = "imu"
@@ -173,7 +177,7 @@ class SensorManager:
             altitude=0.0,
             speed=0.0,
             satellites=0,
-            hdop=99.99
+            hdop=GPS_NO_FIX_HDOP  # Indicates no GPS fix
         )
         self.last_gps_data = data
         return data

@@ -14,6 +14,10 @@ import math
 import logging
 
 
+# Constants
+EARTH_RADIUS_METERS = 6371000  # Earth's radius in meters
+
+
 @dataclass
 class Position:
     """Represents a geographic position"""
@@ -149,9 +153,6 @@ class NavigationSystem:
         Returns:
             float: Distance in meters
         """
-        # Earth's radius in meters
-        R = 6371000
-        
         # Convert to radians
         lat1 = math.radians(pos1.latitude)
         lat2 = math.radians(pos2.latitude)
@@ -164,7 +165,7 @@ class NavigationSystem:
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         
         # Horizontal distance
-        horizontal_distance = R * c
+        horizontal_distance = EARTH_RADIUS_METERS * c
         
         # Include altitude difference
         altitude_diff = pos2.altitude - pos1.altitude
