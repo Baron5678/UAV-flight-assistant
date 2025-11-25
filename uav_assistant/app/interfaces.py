@@ -1,0 +1,57 @@
+from __future__ import annotations
+from typing import Protocol, Sequence, Iterable
+from uav_assistant.domain.models import Waypoint, Mission, Path, Drone
+
+
+class WaypointRepository(Protocol):
+    async def add(self, waypoint: Waypoint) -> Waypoint:
+        ...
+
+    async def get_all(self) -> list[Waypoint]:
+        ...
+
+    async def get_for_mission(self, mission_id: int) -> list[Waypoint]:
+        ...
+
+    async def delete(self, waypoint_id: int) -> None:
+        ...
+
+    async def reset_all(self) -> None:
+        ...
+
+
+class MissionRepository(Protocol):
+    async def get(self, mission_id: int) -> Mission:
+        ...
+
+    async def save(self, mission: Mission) -> Mission:
+        ...
+
+    async def set_best(self, mission_id: int, path: Path, cost: float) -> None:
+        ...
+
+
+class PathRepository(Protocol):
+    async def save(
+        self,
+        mission_id: int,
+        path: Path,
+        generation: int | None = None,
+    ) -> Path:
+        ...
+
+    async def list_by_mission(self, mission_id: int) -> list[Path]:
+        ...
+
+    async def get(self, path_id: int) -> Path:
+        ...
+
+
+class PathOptimizer(Protocol):
+    async def optimize(
+        self,
+        mission: Mission,
+        drones: Sequence[Drone],
+        candidates: Sequence[Waypoint],
+    ) -> Path:
+        ...
