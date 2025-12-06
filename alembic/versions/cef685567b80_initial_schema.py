@@ -1,8 +1,8 @@
-"""new db after cleanup
+"""initial schema
 
-Revision ID: 45a78aed088b
-Revises: 26204e269391
-Create Date: 2025-11-24 21:00:18.663056
+Revision ID: cef685567b80
+Revises: 
+Create Date: 2025-12-06 19:19:20.255740
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '45a78aed088b'
-down_revision: Union[str, Sequence[str], None] = '26204e269391'
+revision: str = 'cef685567b80'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('latitude', sa.Float(), nullable=False),
     sa.Column('longitude', sa.Float(), nullable=False),
-    sa.Column('role', sa.Enum('REQUIRED', 'OPTIONAL', 'STATION', name='waypoint_role'), server_default='OPTIONAL', nullable=False),
+    sa.Column('role', sa.Enum('REQUIRED', 'START', 'END', 'STATION', name='waypoint_role'), server_default='REQUIRED', nullable=False),
     sa.Column('loss_chance', sa.Float(), server_default='0.2', nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name', 'latitude', 'longitude', name='uq_waypoints_name_lat_lon')

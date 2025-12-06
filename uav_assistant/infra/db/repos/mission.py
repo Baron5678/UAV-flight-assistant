@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.cross.enums import Status
 from uav_assistant.domain.models import Mission
 from uav_assistant.app.interfaces import MissionRepository
-from uav_assistant.infra.db.models import Mission as DbMission
+from uav_assistant.infra.db.models import Mission as DbMission, MissionWaypoint
 
 
 def to_domain(db: DbMission) -> Mission:
@@ -34,7 +34,7 @@ class SqlAlchemyMissionRepository(MissionRepository):
             raise ValueError(f"Mission {mission_id} not found")
         return to_domain(db_mission)
 
-    async def save(self, mission: Mission) -> Mission:
+    async def add(self, mission: Mission) -> Mission:
         if mission.id is None:
             mission = DbMission(
                 name=mission.name,
@@ -76,4 +76,15 @@ class SqlAlchemyMissionRepository(MissionRepository):
             raise ValueError(f"Mission {mission_id} not found")
         db_mission.best_cost = cost
         db_mission.status = Status.COMPLETE
+        await self.session.flush()
+
+    async def delete(self, mission_id: int) -> None:
+        await self.session.execute(
+            delete(MissionWaypoint).where(MissionWaypoint.mission_id == mission_id)
+        )
+
+        await self.session.execute(
+            delete(DbMission).where(DbMission.id == mission_id)
+        )
+
         await self.session.flush()

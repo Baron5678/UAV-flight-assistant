@@ -55,6 +55,7 @@ class SqlAlchemyWaypointRepository(WaypointRepository):
         await self.session.execute(
             delete(DbWaypoint).where(DbWaypoint.id == waypoint_id)
         )
+        await self.session.flush()
 
     async def reset_all(self) -> None:
         await self.session.execute(delete(DbWaypoint))

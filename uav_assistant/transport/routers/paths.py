@@ -13,49 +13,37 @@ router = APIRouter()
 
 
 @router.post("/path", response_model=PathResponse)
-async def generate_path(
+async def preview_path(
     body: PathRequest,
     session: AsyncSession = Depends(get_session),
 ) -> PathResponse:
     mission_repo = SqlAlchemyMissionRepository(session)
     waypoint_repo = SqlAlchemyWaypointRepository(session)
-    path_repo = SqlAlchemyPathRepository(session)
-    # optimizer = GAPathOptimizer()
 
     mission = await mission_repo.get(body.mission_id)
-
-    # choose optimizer based on mission.algo
-    algo = (mission.algo or "GA").upper()
-    if algo == "ES":
-        optimizer = ESPathOptimizer()
-    else:
-        optimizer = GAPathOptimizer()
-
-    service = PathService(
-        mission_repo=mission_repo,
-        waypoint_repo=waypoint_repo,
-        path_repo=path_repo,
-        optimizer=optimizer,
+    mission.generations = body.generations
+    mission.population_size = body.population_size
+    await mission_repo.add(mission)
+    candidates = await waypoint_repo.get_for_mission(body.mission_id)
+    optimizer = GAPathOptimizer()
+    dom_path = await optimizer.optimize(
+        mission=mission,
+        drones=[],
+        candidates=candidates,
     )
 
-    try:
-        path = await service.generate_best_path_for_mission(mission_id=body.mission_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    candidates = await waypoint_repo.get_for_mission(body.mission_id)
     id2wp = {w.id: w for w in candidates}
-
-    coords: list[tuple[float, float]] = []
-    for wp_id in path.waypoint_ids:
-        wp = id2wp.get(wp_id)
-        if wp is None:
-            continue
-        coords.append((wp.position.lat, wp.position.lon))
+    coords = [
+        (id2wp[i].position.lat, id2wp[i].position.lon)
+        for i in dom_path.waypoint_ids
+    ]
 
     return PathResponse(
-        mission_id=body.mission_id,
+        waypoint_ids=dom_path.waypoint_ids,
         waypoint_coords=coords,
-        total_distance_m=float(path.total_distance_m or 0.0),
-        cost=float(path.cost or 0.0),
+        total_distance_m=dom_path.total_distance_m,
+        best_cost=dom_path.cost,
+        generations=body.generations,
+        population_size=body.population_size,
+        algo=body.algo,
     )

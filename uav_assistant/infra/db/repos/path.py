@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Sequence, cast
+from typing import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.domain.models import Path as DomPath
 from uav_assistant.app.interfaces import PathRepository
@@ -54,6 +54,30 @@ class SqlAlchemyPathRepository(PathRepository):
             cost=db_path.cost,
         )
 
+    async def save_for_mission(self, mission_id: int, path: DomPath) -> DomPath:
+        db_path = DbPath(
+            mission_id=mission_id,
+            cost=path.cost,
+            distance_m=path.total_distance_m,
+        )
+        self.session.add(db_path)
+        await self.session.flush()
+
+        for seq, waypoint_id in enumerate(path.waypoint_ids):
+            db_pw = DbPathWaypoint(
+                path_id=db_path.id,
+                waypoint_id=waypoint_id,
+                seq=seq,
+            )
+            self.session.add(db_pw)
+
+        await self.session.flush()
+
+        stmt = select(DbPathWaypoint).where(DbPathWaypoint.path_id == db_path.id)
+        res = await self.session.execute(stmt)
+        wp_rows = res.scalars().all()
+        return to_domain(db_path, wp_rows)
+
     async def get_by_mission(self, mission_id: int) -> list[DomPath]:
         stmt = select(DbPath).where(DbPath.mission_id == mission_id)
         res = await self.session.execute(stmt)
@@ -77,3 +101,19 @@ class SqlAlchemyPathRepository(PathRepository):
         res = await self.session.execute(stmt)
         wp_rows = res.scalars().all()
         return to_domain(db_path, wp_rows)
+
+    async def delete_for_mission(self, mission_id: int) -> None:
+        stmt = select(DbPath.id).where(DbPath.mission_id == mission_id)
+        res = await self.session.execute(stmt)
+        path_ids = [row[0] for row in res.all()]
+
+        if not path_ids:
+            return
+
+        await self.session.execute(
+            delete(DbPathWaypoint).where(DbPathWaypoint.path_id.in_(path_ids))
+        )
+        await self.session.execute(
+            delete(DbPath).where(DbPath.id.in_(path_ids))
+        )
+        await self.session.flush()

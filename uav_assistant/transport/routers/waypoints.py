@@ -5,7 +5,7 @@ from uav_assistant.infra.db.postgre import get_session
 from uav_assistant.infra.db.repos.waypoint import SqlAlchemyWaypointRepository
 from uav_assistant.app.services.waypoint import WaypointService, AddWaypointCommand
 from uav_assistant.cross.enums import WaypointRole
-from uav_assistant.transport.routers.models import WaypointRequest, WaypointResponse
+from uav_assistant.transport.routers.models import WaypointRequest, WaypointResponse, DeleteWaypointRequest
 
 router = APIRouter()
 COLOR_BY_ROLE = {
@@ -42,3 +42,16 @@ async def add_point(
         color=COLOR_BY_ROLE.get(role_str, "blue"),
         name=wp.name,
     )
+
+@router.post("/delete_point")
+async def delete_point(
+    body: DeleteWaypointRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+
+    repo = SqlAlchemyWaypointRepository(session)
+    service = WaypointService(repo)
+
+    await service.delete(body.waypoint_id)
+
+    return {"ok": True}

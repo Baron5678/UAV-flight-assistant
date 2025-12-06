@@ -5,6 +5,14 @@ from uav_assistant.infra.db.models import WaypointRole
 
 COLOR_BY_ROLE = {"required": "red", "optional": "blue", "station": "green"}
 
+class PathMeta(BaseModel):
+    waypoint_ids: List[int]
+    total_distance_m: float
+    best_cost: float
+    generations: int
+    population_size: int
+    algo: str = "GA"
+
 class StartMissionRequest(BaseModel):
     name: str = "default_mission"
     start_waypoint_id: int = -1
@@ -14,19 +22,27 @@ class StartMissionRequest(BaseModel):
     population_size: int = 0
     algo: str = "GA"
 
-
 class StartMissionResponse(BaseModel):
     mission_id: int
 
-class PathRequest(BaseModel):
-    mission_id: int = Field(..., ge=1)
-
-
-class PathResponse(BaseModel):
+class FinishMissionRequest(PathMeta):
     mission_id: int
+
+class CancelMissionRequest(BaseModel):
+    mission_id: int
+
+
+class DeleteWaypointRequest(BaseModel):
+    waypoint_id: int
+
+class PathRequest(BaseModel):
+    mission_id: int
+    generations: int = 30
+    population_size: int = 20
+    algo: str = "GA"
+
+class PathResponse(PathMeta):
     waypoint_coords: List[Tuple[float, float]]
-    total_distance_m: float
-    cost: float
 
 class WaypointRequest(BaseModel):
     lon: float = 0.0

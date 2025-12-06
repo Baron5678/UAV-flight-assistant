@@ -2,13 +2,18 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from uav_assistant.app.services.mission import MissionService, CancelMissionCommand
 from uav_assistant.cross.enums import Status
 from uav_assistant.domain.models import Mission
 from uav_assistant.infra.db.repos.mission import SqlAlchemyMissionRepository
 from uav_assistant.infra.db.postgre import get_session
+from uav_assistant.infra.db.repos.path import SqlAlchemyPathRepository
+from uav_assistant.domain.models import Path as DomPath
 from uav_assistant.transport.routers.models import (
     StartMissionRequest,
     StartMissionResponse,
+    FinishMissionRequest, CancelMissionRequest
 )
 from uav_assistant.infra.db.models import (
     Mission as DbMission,
@@ -56,12 +61,52 @@ async def start_mission(
         status=Status.PENDING,
     )
 
-    mission = await mission_repo.save(mission)
+    mission = await mission_repo.add(mission)
     for wp_id in body.waypoint_ids:
         session.add(MissionWaypoint(mission_id=mission.id, waypoint_id=wp_id))
     await session.flush()
     return StartMissionResponse(mission_id=mission.id)
 
+@router.post("/finish_mission")
+async def finish_mission(
+    body: FinishMissionRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    mission_repo = SqlAlchemyMissionRepository(session)
+    path_repo = SqlAlchemyPathRepository(session)
+
+    mission = await mission_repo.get(body.mission_id)
+
+    final_path = DomPath(
+        waypoint_ids=body.waypoint_ids,
+        total_distance_m=body.total_distance_m,
+        cost=body.best_cost,
+    )
+
+    saved_path = await path_repo.save_for_mission(
+        mission_id=body.mission_id,
+        path=final_path,
+    )
+
+    mission.best_cost = saved_path.cost
+    mission.status = Status.COMPLETE
+    await mission_repo.add(mission)
+
+    return {"mission_id": mission.id}
+
+
+@router.post("/cancel_mission")
+async def cancel_mission(
+    body: CancelMissionRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    mission_repo = SqlAlchemyMissionRepository(session)
+    path_repo = SqlAlchemyPathRepository(session)
+    service = MissionService(mission_repo, path_repo)
+
+    await service.cancel_mission(CancelMissionCommand(mission_id=body.mission_id))
+
+    return {"mission_id": body.mission_id, "status": "CANCELED"}
 
 @router.post("/reset_all")
 async def reset_all(session: AsyncSession = Depends(get_session)):
