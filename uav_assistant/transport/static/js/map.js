@@ -314,6 +314,8 @@ async function generatePathPreview() {
   const generations = parseInt(document.getElementById('gen').value, 10);
   const populationSize = parseInt(document.getElementById('pop').value, 10);
   const algo = document.getElementById('algo').value; // "GA" or "ES"
+  const battery = document.getElementById('energy').value
+  const ratio = document.getElementById('ratio').value
 
   const res = await fetch('/path', {
     method: 'POST',
@@ -322,7 +324,12 @@ async function generatePathPreview() {
       mission_id: currentMissionId,
       generations,
       population_size: populationSize,
-      algo
+      algo,
+        drone: {
+        "battery_capacity_wh": battery,
+        "wh_per_km": ratio,
+        "reserve_ratio": 0.2
+        }
     })
   });
 

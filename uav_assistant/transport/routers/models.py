@@ -31,15 +31,20 @@ class FinishMissionRequest(PathMeta):
 class CancelMissionRequest(BaseModel):
     mission_id: int
 
-
 class DeleteWaypointRequest(BaseModel):
     waypoint_id: int
+
+class DroneRequest(BaseModel):
+    battery_capacity_wh: float = 2000.0
+    wh_per_km: float = 10.0
+    reserve_ratio: float = 0.2
 
 class PathRequest(BaseModel):
     mission_id: int
     generations: int = 30
     population_size: int = 20
     algo: str = "GA"
+    drone: DroneRequest | None = None
 
 class PathResponse(PathMeta):
     waypoint_coords: List[Tuple[float, float]]

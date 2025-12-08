@@ -34,6 +34,8 @@ class Drone:
     payload_kg: float
     battery_capacity_wh: Optional[float] = None
     mass_kg: Optional[float] = None
+    per_meter_wh: Optional[float] = None
+
 
 @dataclass
 class Mission:
