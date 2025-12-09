@@ -2,6 +2,8 @@ from typing import Sequence, Tuple, Any
 
 import numpy as np
 import pygad
+
+from uav_assistant.cross.sockets import TraceFn, TraceEvent
 from uav_assistant.infra.db.models import Waypoint, WaypointRole
 from uav_assistant.infra.ga.population import build_initial_population
 from uav_assistant.infra.ga.fitness_functions import make_distance_fitness, make_energy_fitness
@@ -85,7 +87,34 @@ def run_ga_s(
     reserve_ratio: float = 0.2,
     station_threshold: float = 0.5,
     station_penalty_m: float = 200.0,
+    trace: TraceFn | None = None,
 ) -> Tuple[list[int], float]:
+    def on_generation(ga_instance: pygad.GA) -> None:
+
+        if trace is None:
+            return
+
+        pop_fitness = getattr(ga_instance, "last_generation_fitness", None)
+        if pop_fitness is None:
+            try:
+                pop_fitness = ga_instance.cal_pop_fitness()
+            except Exception as e:
+                print("cal_pop_fitness failed inside on_generation:", e)
+                return
+
+        sol, fit, _ = ga_instance.best_solution(pop_fitness=pop_fitness)
+        route_ids = decode_fn(sol)
+        cost = -float(fit)
+        gen = ga_instance.generations_completed
+
+        event: TraceEvent = {
+            "algo": "GA",
+            "generation": gen,
+            "best_cost": cost,
+            "waypoint_ids": route_ids,
+        }
+        print ("GA Generation", gen, "Best Cost:", cost)
+        trace(event)
 
     ids = [int(p.id) for p in points]
     id_set = set(ids)
@@ -144,10 +173,11 @@ def run_ga_s(
         mutation_type="random",
         mutation_probability=0.12,
         crossover_type="scattered",
-        keep_parents=max(1, pop_size // 20),
+        keep_parents=max(1, pop_size // 40),
         allow_duplicate_genes=True,
         save_best_solutions=True,
         random_seed=127,
+        on_generation=on_generation
     )
 
     ga.run()

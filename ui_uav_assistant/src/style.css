@@ -2,12 +2,22 @@ html, body {
   height: 100%;
 }
 
+html, body, #root {
+  height: 100%;
+}
+
+/* body only sets base styles now */
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  display: grid;
-  grid-template-rows: 1fr auto;
 }
+
+/* make #root be the layout grid */
+#root {
+  display: grid;
+  grid-template-rows: 1fr auto;  /* main takes remaining space, footer at bottom */
+}
+
 
 .layout {
   display: grid;
@@ -57,6 +67,50 @@ legend {
   border-right: 2px solid #eee;
 }
 
+.tracer-panel {
+  margin-top: 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+
+  /* dynamic height: grows with content up to a cap */
+  min-height: 30vh;
+  max-height: 40vh;       /* ~40% of viewport height */
+  overflow: hidden;       /* header fixed, body scrolls internally */
+}
+
+.tracer-header {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #f0f0f0;
+  background: #222;
+  border-bottom: 1px solid #333;
+}
+
+.tracer-body {
+  padding: 6px 10px 8px;
+  font-family: Menlo, Consolas, Monaco, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #eaeaea;
+  background: #000;
+  overflow-y: auto;        /* scroll when there are many lines */
+}
+
+.tracer-line {
+  white-space: pre-wrap;
+}
+
+.tracer-placeholder {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 .controls {
   display: grid;
   grid-template-columns: 140px 1fr;
@@ -82,10 +136,9 @@ legend {
   min-height: 60vh;
 }
 
-/* Buttons centered in a sticky footer */
 .footer-actions {
-  position: sticky; /* stays visible at bottom on short pages */
-  bottom: 0;
+  /* position: sticky; */  /* remove this line */
+  /* bottom: 0; */         /* no need */
   display: flex;
   justify-content: center;
   gap: 15px;
@@ -94,6 +147,7 @@ legend {
   background: #fff;
   z-index: 10;
 }
+
 button {
   padding: 8px 12px;
   border: 1px solid #ddd;

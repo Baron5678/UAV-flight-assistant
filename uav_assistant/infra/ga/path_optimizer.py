@@ -1,5 +1,6 @@
 from typing import Sequence
 from uav_assistant.app.interfaces import PathOptimizer
+from uav_assistant.cross.sockets import TraceFn
 from uav_assistant.domain.models import Mission, Waypoint, Drone, Path
 from uav_assistant.domain.metrics import distance_h, build_distance_matrix, distance_m
 from uav_assistant.infra.es.es import run_es
@@ -7,6 +8,9 @@ from uav_assistant.infra.ga.genetic_algorithm import run_ga, run_ga_s
 
 
 class GAPathOptimizer(PathOptimizer):
+    def __init__(self, trace: TraceFn | None = None) -> None:
+        self._trace = trace
+
     async def optimize(
         self,
         mission: Mission,
@@ -35,6 +39,7 @@ class GAPathOptimizer(PathOptimizer):
             reserve_ratio=0.2,  # e.g. 20% safety reserve
             station_threshold=0.5,
             station_penalty_m=200.0,
+            trace=self._trace
         )
         id_to_wp = {w.id: w for w in candidates}
         total_dist = 0.0
