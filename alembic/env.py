@@ -1,8 +1,8 @@
 from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine, pool
-import drone_path.app.db.models as models
-from drone_path.app.db.url_builder import build
+import uav_assistant.infra.db.models as models
+from uav_assistant.infra.db.url_builder import build
 from dotenv import load_dotenv
 import os
 
