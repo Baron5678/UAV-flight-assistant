@@ -1,0 +1,17 @@
+fastapi==0.124.0
+numpy==2.3.5
+pydantic==2.12.5
+pygad==3.5.0
+python-dotenv==1.2.1
+SQLAlchemy==2.0.34
+starlette==0.50.0
+uvicorn[standard]
+asyncpg==0.30.0
+alembic==1.17.2
+psycopg2-binary==2.9.11
+cma
+uvicorn[standard]
+pandas
+scikit-learn
+joblib
+python-multipart
