@@ -9,18 +9,11 @@ import os
 env_file = os.path.join(os.path.dirname(__file__), '../.env')
 load_dotenv(dotenv_path=env_file)
 
-url = build(
-    "PGSYNCDRIVER",
-    "PGROLE",
-    "PGPASSWORD",
-    "PGHOST",
-    "PGPORT",
-    "PGDATABASE",
-)
-
 config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name)
+
+url = config.get_main_option("sqlalchemy.url")
 
 target_metadata = models.Base.metadata
 
