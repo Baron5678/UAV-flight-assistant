@@ -1,0 +1,12 @@
+[run]
+source = uav_assistant
+branch = True
+
+[report]
+omit =
+    */transport/routers/*
+    */infra/db/*
+    */__init__.py
+
+exclude_lines =
+    raise NotImplementedError
