@@ -30,7 +30,6 @@ def post_run_energy(
 
         dist = float(distance_m(wp_prev.position, wp_cur.position))
         print(f"Distance: {dist}")
-        total_dist += dist
         prev_id = cur_id
         if not np.isfinite(dist) or dist < 0:
             return PostRunReport(
