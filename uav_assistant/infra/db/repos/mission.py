@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from imaplib import Literal
+from typing import List
+
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from uav_assistant.cross.enums import Status
+from uav_assistant.cross.enums import Status, ObjectiveFunction
+from uav_assistant.cross.parser import parse_literal
 from uav_assistant.domain.models import Mission
 from uav_assistant.app.interfaces import MissionRepository
 from uav_assistant.infra.db.models import Mission as DbMission, MissionWaypoint
+from uav_assistant.infra.objective_functions.objectives import Objectives
 
 
 def to_domain(db: DbMission) -> Mission:
@@ -20,6 +25,7 @@ def to_domain(db: DbMission) -> Mission:
         population_size=db.population_size,
         best_cost=db.best_cost,
         status=Status(db.status),
+        objective=ObjectiveFunction(db.objective),
     )
 
 
@@ -46,6 +52,7 @@ class SqlAlchemyMissionRepository(MissionRepository):
                 population_size=mission.population_size,
                 best_cost=mission.best_cost or 0.0,
                 status=mission.status,
+                objective=mission.objective
             )
             self.session.add(mission)
             await self.session.flush()
@@ -65,9 +72,17 @@ class SqlAlchemyMissionRepository(MissionRepository):
         db_mission.population_size = mission.population_size
         db_mission.best_cost = mission.best_cost or 0.0
         db_mission.status = mission.status
+        db_mission.objective = mission.objective
 
         await self.session.flush()
         return to_domain(db_mission)
+
+    async def get_all(self) -> list[Mission]:
+        res = await self.session.execute(
+            select(DbMission).order_by(DbMission.id.asc())
+        )
+        db_missions = res.scalars().all()
+        return [to_domain(m) for m in db_missions]
 
     async def set_best(self, mission_id: int, path, cost: float) -> None:
         res = await self.session.execute(select(DbMission).where(DbMission.id == mission_id))

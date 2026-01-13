@@ -72,3 +72,9 @@ def build_distance_matrix(points: list["Waypoint"]) -> np.ndarray:
             d = distance_h(points[i],points[j])
             graph[i, j] = graph[j, i] = d
     return graph
+
+def build_id_index(points) -> dict[int, int]:
+    return {p.id: i for i, p in enumerate(points)}
+
+def build_id2wp(points: Sequence[Waypoint]) -> dict[int, Waypoint]:
+    return {p.id: p for p in points}

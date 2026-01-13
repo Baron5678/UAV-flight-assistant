@@ -1,0 +1,1 @@
+export type PageKey = "DRONE_PLANNER" | "ALGO_SUMMARY";

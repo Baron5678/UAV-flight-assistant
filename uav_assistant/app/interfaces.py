@@ -1,6 +1,11 @@
 from __future__ import annotations
+
+import asyncio
 from typing import Protocol, Sequence, Iterable
-from uav_assistant.domain.models import Waypoint, Mission, Path, Drone
+
+from uav_assistant.cross.sockets import TraceFn
+from uav_assistant.domain.models import Waypoint, Mission, Path, Drone, PathSummary
+from uav_assistant.cross.sockets import TraceQueue
 
 
 class WaypointRepository(Protocol):
@@ -15,6 +20,8 @@ class MissionRepository(Protocol):
     async def delete(self, mission_id: int) -> None: ...
     async def get(self, mission_id: int) -> Mission: ...
     async def set_best(self, mission_id: int, path: Path, cost: float) -> None:  ...
+    async def get_all(self) -> list[Mission]: ...   # NEW
+
 
 class PathRepository(Protocol):
     async def save( self, mission_id: int, path: Path, generation: int | None = None) -> Path: ...
@@ -23,5 +30,29 @@ class PathRepository(Protocol):
     async def get(self, path_id: int) -> Path: ...
     async def delete_for_mission(self, mission_id: int) -> None: ...
 
+class PathSummaryRepository(Protocol):
+    async def add(self, summary: PathSummary) -> None: ...
+    async def add_many(self, summaries: Sequence[PathSummary]) -> None: ...
+    async def list_by_mission(self, mission_id: int) -> list[PathSummary]: ...
+    async def delete_for_mission(self, mission_id: int) -> None: ...
+
 class PathOptimizer(Protocol):
-    async def optimize(self, mission: Mission,drones: Sequence[Drone], candidates: Sequence[Waypoint]) -> Path: ...
+    async def optimize_http(
+            self,
+            mission: Mission,
+            drones: Sequence[Drone],
+            candidates: Sequence[Waypoint],
+    ) -> Path:
+        ...
+
+    def optimize_ws(
+            self,
+            *,
+            mission: Mission,
+            drones: Sequence[Drone],
+            candidates: Sequence[Waypoint],
+            loop: asyncio.AbstractEventLoop,
+            queue: TraceQueue,
+            trace: TraceFn | None,
+    ) -> None:
+        ...

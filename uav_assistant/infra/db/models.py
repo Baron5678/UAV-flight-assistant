@@ -1,51 +1,62 @@
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
-from uav_assistant.cross.enums import WaypointRole
+from __future__ import annotations
+
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import (
     Integer,
     String,
-    Enum as SqlEnum,
-    Index,
-    UniqueConstraint,
     Float,
     ForeignKey,
+    UniqueConstraint,
+    Index,
 )
+
+from uav_assistant.cross.enums import WaypointRole
+
 
 class Base(DeclarativeBase):
     pass
 
+
 class Waypoint(Base):
     __tablename__ = "waypoints"
     __table_args__ = (
-        UniqueConstraint("name", "latitude", "longitude", name="uq_waypoints_name_lat_lon"),
+        UniqueConstraint(
+            "name", "latitude", "longitude",
+            name="uq_waypoints_name_lat_lon",
+        ),
         Index("ix_waypoints_role", "role"),
         Index("ix_waypoints_lat_lon", "latitude", "longitude"),
     )
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    latitude: Mapped[float] = mapped_column(nullable=False)
-    longitude: Mapped[float] = mapped_column(nullable=False)
-    role: Mapped[WaypointRole] = mapped_column(
-        SqlEnum(
-            WaypointRole,
-            name="waypoint_role",
-            native_enum=True,
-            create_types=False,
-            validate_strings=True,
-        ),
+    latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    longitude: Mapped[float] = mapped_column(Float, nullable=False)
+
+    role: Mapped[str] = mapped_column(
+        String(20),
         nullable=False,
         default=WaypointRole.REQUIRED,
-        server_default="REQUIRED",
+        server_default=WaypointRole.REQUIRED,
     )
-    loss_chance: Mapped[float] = mapped_column(Float, nullable=False, default=0.2, server_default="0.2")
+
+    loss_chance: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.2,
+        server_default="0.2",
+    )
 
     def __repr__(self) -> str:
         return (
             f"Waypoint(id={self.id}, name={self.name}, "
-            f"lat={self.latitude}, lon={self.longitude} role={self.role})"
+            f"lat={self.latitude}, lon={self.longitude}, role={self.role})"
         )
+
 
 class Drone(Base):
     __tablename__ = "drones"
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(
         String(50),
@@ -53,8 +64,18 @@ class Drone(Base):
         unique=True,
         server_default="Unnamed Drone",
     )
-    speed: Mapped[float] = mapped_column(Float, nullable=False, server_default="4.0")   # m/s
-    payload: Mapped[float] = mapped_column(Float, nullable=False, server_default="4.0") # kg
+
+    speed: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        server_default="4.0",  # m/s
+    )
+
+    payload: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        server_default="4.0",  # kg
+    )
 
 class Mission(Base):
     __tablename__ = "missions"
@@ -63,11 +84,12 @@ class Mission(Base):
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     start_waypoint_id: Mapped[int] = mapped_column(
-        ForeignKey("waypoints.id"),
+        ForeignKey("waypoints.id", ondelete="CASCADE"),
         nullable=False,
     )
+
     end_waypoint_id: Mapped[int] = mapped_column(
-        ForeignKey("waypoints.id"),
+        ForeignKey("waypoints.id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -80,12 +102,20 @@ class Mission(Base):
         server_default="GA",
     )
 
+    objective: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="DISTANCE",
+        server_default="DISTANCE",
+    )
+
     generations: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=30,
         server_default="30",
     )
+
     population_size: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -107,18 +137,56 @@ class Mission(Base):
         server_default="COMPLETED",
     )
 
+
 class Path(Base):
     __tablename__ = "paths"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
     mission_id: Mapped[int] = mapped_column(
-        ForeignKey("missions.id"),
+        ForeignKey("missions.id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    cost: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0.0")
-    distance_m: Mapped[float] = mapped_column(Float, nullable=False, default=0.0, server_default="0.0")
+    generation: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+
+    cost: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default="0.0",
+    )
+
+    distance_m: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.0,
+        server_default="0.0",
+    )
+
+class PathSummary(Base):
+    __tablename__ = "path_summaries"
+    __table_args__ = (
+        Index("ix_path_summaries_mission_gen", "mission_id", "generation"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    mission_id: Mapped[int] = mapped_column(
+        ForeignKey("missions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    generation: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    cost: Mapped[float] = mapped_column(Float, nullable=False)
+
+    total_distance_m: Mapped[float] = mapped_column(Float, nullable=False)
 
 class PathWaypoint(Base):
     __tablename__ = "path_waypoints"
@@ -129,12 +197,14 @@ class PathWaypoint(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     path_id: Mapped[int] = mapped_column(
-        ForeignKey("paths.id"),
+        ForeignKey("paths.id", ondelete="CASCADE"),
         nullable=False,
     )
+
     seq: Mapped[int] = mapped_column(Integer, nullable=False)
+
     waypoint_id: Mapped[int] = mapped_column(
-        ForeignKey("waypoints.id"),
+        ForeignKey("waypoints.id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -147,12 +217,12 @@ class MissionWaypoint(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     mission_id: Mapped[int] = mapped_column(
-        ForeignKey("missions.id"),
+        ForeignKey("missions.id", ondelete="CASCADE"),
         nullable=False,
     )
 
     waypoint_id: Mapped[int] = mapped_column(
-        ForeignKey("waypoints.id"),
+        ForeignKey("waypoints.id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -165,11 +235,11 @@ class MissionDrone(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     mission_id: Mapped[int] = mapped_column(
-        ForeignKey("missions.id"),
+        ForeignKey("missions.id", ondelete="CASCADE"),
         nullable=False,
     )
 
     drone_id: Mapped[int] = mapped_column(
-        ForeignKey("drones.id"),
+        ForeignKey("drones.id", ondelete="CASCADE"),
         nullable=False,
     )

@@ -1,4 +1,7 @@
-from typing import Callable, Dict, Any
+import asyncio
+from typing import Callable, Union
 
-TraceEvent = Dict[str, Any]
-TraceFn = Callable[[TraceEvent], None]
+from uav_assistant.domain.models import OptimizerStep, OptimizerFinal, OptimizerDiagnostic, OptimizerRouteValidation
+
+TraceFn = Callable[[OptimizerStep], None]
+TraceQueue = asyncio.Queue[Union[OptimizerStep, OptimizerFinal, OptimizerDiagnostic, OptimizerRouteValidation]]

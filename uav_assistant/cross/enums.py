@@ -10,3 +10,8 @@ class Status(enum.StrEnum):
     COMPLETE = "COMPLETE"
     PENDING = "PENDING"
 
+class ObjectiveFunction(enum.StrEnum):
+    DISTANCE = "DISTANCE"
+    ENERGY = "ENERGY"
+    WEATHER = "WEATHER"
+
