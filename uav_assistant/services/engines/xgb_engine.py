@@ -1,19 +1,16 @@
-import joblib
-import pandas as pd
-from datetime import datetime, timedelta
 from typing import List
+from datetime import datetime, timedelta
 
+from uav_assistant.services.engines.base_engine import BaseEngine
 from uav_assistant.dtos.ForecastRequest import UAVState
 from uav_assistant.dtos.ForecastResponse import ForecastPoint
-from uav_assistant.services.engines.base_engine import BaseEngine
-from uav_assistant.services.telemetry_repository import TelemetryRepository
 from uav_assistant.services.feature_builder import FeatureBuilder
+from uav_assistant.services.telemetry_repository import TelemetryRepository
 
 
-class MlrEngine(BaseEngine):
+class XgbEngine(BaseEngine):
     """
-    Predicts battery current for each forecast step,
-    then converts it to SoC using Coulomb counting.
+    XGBoost-based battery current predictor
     """
 
     def __init__(
@@ -30,27 +27,29 @@ class MlrEngine(BaseEngine):
 
         results: List[ForecastPoint] = []
         now = datetime.utcnow()
-
-        # forecast loop: one ML prediction per horizon step
         dt = self.horizon_step_sec
 
         for t in range(dt, horizon_seconds + 1, dt):
-            # Preprocessing data before inference 
             Xraw = self.repo.step(dt)
             X = FeatureBuilder.add_is_flying(Xraw)
-            X = FeatureBuilder.insert_uav_state(X, uav, self.training_features)
+            X = FeatureBuilder.insert_uav_state(
+                X, uav, self.training_features
+            )
 
-            # Inference and integration
+            # Inference
             pred_current_A = self._predict_current(X)
+
+            # Coulomb counting
             mAh_used = (dt / 3600.0) * (pred_current_A * 1000.0)
-            soc_mAh -= mAh_used
-            if soc_mAh < 0:
-                soc_mAh = 0.0
+            soc_mAh = max(0.0, soc_mAh - mAh_used)
 
             soc_percent = (soc_mAh / capacity_mAh) * 100.0
 
-            # append forecast point
-            ts = now + timedelta(seconds=t)
-            results.append(ForecastPoint(timestamp=ts, value=soc_percent))
+            results.append(
+                ForecastPoint(
+                    timestamp=now + timedelta(seconds=t),
+                    value=soc_percent
+                )
+            )
 
         return results

@@ -18,18 +18,26 @@ class ModelRegistry:
             "mlr_battery_current": ModelInfo(
                 id="mlr_battery_current",
                 name="MLR",
-                version="1.0",
+                version="2.0",
                 description="Multiple Linear Regression",
-                path=base / "mlr_battery_current.pkl",
+                path=base / "mlr.pkl",
                 engine="mlr",
             ),
-            "arimax_soc": ModelInfo(
-                id="arimax_soc",
-                name="ARIMAX",
+            "xgb": ModelInfo(
+                id="xgb",
+                name="XGB",
                 version="1.0",
-                description="ARIMAX for SoC forecasting",
-                path=base / "arimax_soc.pkl",
-                engine="arimax",
+                description="XGBoost",
+                path=base / "xgb.pkl",
+                engine="xgb",
+            ),
+            "xgb_ar_lag1": ModelInfo(
+                id="xgb_ar_lag1",
+                name="XGB_AR",
+                version="2.0",
+                description="XGBoost with AutoRegression",
+                path=base / "xgb_ar_lag1.pkl",
+                engine="xgb_ar_lag1",
             ),
         }
 

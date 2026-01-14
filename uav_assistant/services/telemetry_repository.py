@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 import pandas as pd
 import numpy as np
 from typing import List, Optional
@@ -7,63 +8,56 @@ from uav_assistant.dtos.ForecastRequest import UAVState
 
 
 class TelemetryRepository:
-    """
-    Loads a prepared test dataset ONCE and provides slices of telemetry
-    ready for ML inference.
-
-    The ML engines do NOT know about CSV files.
-    """
-
-    def __init__(self, csv_path: Path, features: List[str]):
-        self.features = features
-        if not csv_path.exists():
-            raise FileNotFoundError(f"Telemetry CSV not found: {csv_path}")
-
+    def __init__(self, csv_path: Path):
         df = pd.read_csv(csv_path)
         df = df.sort_values(["flight", "time"]).reset_index(drop=True)
-        self.df = df
-        self.test_flights = df["flight"].unique()
 
-    def get_random_test_flight(self) -> pd.DataFrame:
-        """Selects one random flight from test split."""
-        flight = np.random.choice(self.test_flights)
-        return self.df[self.df["flight"] == flight].reset_index(drop=True)
+        df["_airborne"] = (
+            (df["speed_h_ms"] > 0.1) | (df["alt"] > 1)
+        )
 
-    def get_flight_by_id(self, flight_id: int) -> pd.DataFrame:
-        """Retrieves a specific flight (if frontend wants to choose)."""
-        df = self.df[self.df["flight"] == flight_id]
-        if df.empty:
-            raise ValueError(f"Flight {flight_id} not found in telemetry dataset.")
-        return df.reset_index(drop=True)
-
-    def prepare_features(self, base_df, uav: UAVState, training_features=None):
-        """
-        Returns a dataframe with EXACTLY the same columns the MLR model was trained on.
-        Missing columns get filled with 0.
-        Some columns (wind_speed, payload, etc.) get overwritten using the UAVState.
-        """
-
-        df = base_df.copy()
-
-        # Overwrite columns that exist both in training data and UAVState
-        replacements = {
-            "wind_speed": getattr(uav, "wind_speed", None),
-            "payload": getattr(uav, "payload", None),
+        self.state: pd.Series | None = None
+        self.flight_groups = {
+            f: g.reset_index(drop=True)
+            for f, g in df.groupby("flight")
+            if g["_airborne"].sum() > 20
         }
 
-        for col, value in replacements.items():
-            if value is not None and col in df.columns:
-                df[col] = value
 
-        # Create final output with exact training columns
-        out = {}
+    def reset(self):
+        flight_id = random.choice(list(self.flight_groups.keys()))
+        df = self.flight_groups[flight_id]
+        flying = df[df["_airborne"]]
 
-        for col in training_features:
-            if col in df.columns:
-                out[col] = df[col].fillna(0.0)
-            else:
-                # Feature missing in telemetry → fill with 0
-                out[col] = 0.0
+        start = int(0.05 * len(flying))
+        end = int(0.6 * len(flying))
+        idx = random.randint(start, end)
 
-        return pd.DataFrame(out)
+        self.state = flying.iloc[idx].drop("_airborne").copy()
 
+
+    def step(self, dt: float) -> pd.DataFrame:
+        """
+        Advance telemetry state by dt seconds.
+        """
+        if self.state is None:
+            self.reset()
+
+        s = self.state.copy()
+        s["time"] += dt
+
+        s["speed_h_ms"] = max(
+            0.0,
+            s["speed_h_ms"] + np.random.normal(0, 0.1)
+        )
+
+        s["alt"] += (
+            s.get("velocity_z", 0.0) * dt +
+            np.random.normal(0, 0.2)
+        )
+
+        if s["alt"] < 0:
+            s["alt"] = 0
+
+        self.state = s
+        return pd.DataFrame([s])
