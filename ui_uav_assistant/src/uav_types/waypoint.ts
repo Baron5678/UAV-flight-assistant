@@ -4,6 +4,8 @@ export interface Waypoint {
   role: WaypointRole;
   lat: number;
   lng: number;
+  wind_speed: number;
+  wind_direction: number;
   color?: string;
 }
 export interface WaypointState {

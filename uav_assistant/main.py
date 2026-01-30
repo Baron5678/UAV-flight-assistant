@@ -3,7 +3,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from uav_assistant.transport.routers.http import (waypoint, path, mission, path_summary, export_summeary)
+from uav_assistant.transport.routers.http import (waypoint, path, mission, path_summary, export_summeary,
+                                                  undo_last_path)
 from uav_assistant.transport.routers.ws import path as ws_path
 from uav_assistant.api import forecast_router
 
@@ -42,6 +43,7 @@ app.include_router(mission.router)
 app.include_router(ws_path.router)
 app.include_router(path_summary.router)
 app.include_router(export_summeary.router)
+app.include_router(undo_last_path.router)
 app.include_router(forecast_router.router)
 
 @app.get("/", response_class=HTMLResponse)

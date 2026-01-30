@@ -11,12 +11,14 @@ export interface PathGenerationEvent {
   generation: number;
   cost: number;
   waypoint_coords: LatLonTuple[];
+  is_feasible: boolean
 }
 
 export interface PathFinalEvent {
   type: "final";
   cost: number
   payload: PathResponseDto;
+  is_feasible: boolean
 }
 
 export interface PathErrorEvent {

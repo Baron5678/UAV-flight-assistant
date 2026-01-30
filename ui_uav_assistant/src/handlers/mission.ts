@@ -7,6 +7,7 @@ import { Waypoint } from "../uav_types/waypoint";
 import type { TracerApi } from "../cross/logs";
 import { FinishMissionResponseDto, StartMissionResponseDto } from "../api/mission/dto";
 import type { CancelMissionResponseDto } from "../api/mission/dto";
+import {argon2Sync} from "node:crypto";
 
 export interface CancelMissionHandlerArgs {
   mission: MissionState;
@@ -53,10 +54,17 @@ export function startMissionHandler(args :StartMissionHandlerArgs) {
         generations: args.settings.generations,
         populationSize: args.settings.populationSize,
         objectiveFunction: args.settings.objectiveFunction,
+        keep_elitism: args.settings.keepElitism,
+        mutation_probability: args.settings.mutationProbability,
+        seed: args.settings.seed,
+        sigma0: args.settings.sigma0,
+        k_tournament: args.settings.kTournament,
         algo: args.settings.algo,
     });
 
     args.clearPath();
+
+    console.log("REQUEST" + dto.objective)
 
     const res: ResponseUAV<StartMissionResponseDto> = await make_request("mission.start", dto);
     if (res.failed) {
@@ -91,6 +99,11 @@ export function finishMissionHandler(args: FinishMissionHandlerArgs) {
         generations: args.settings.generations,
         populationSize: args.settings.populationSize,
         algo: args.settings.algo,
+        keep_elitism: args.settings.keepElitism,
+        mutation_probability: args.settings.mutationProbability,
+        seed: args.settings.seed,
+        sigma0: args.settings.sigma0,
+        k_tournament: args.settings.kTournament
     });
 
     const res: ResponseUAV<FinishMissionResponseDto> = await make_request("mission.finish", dto);

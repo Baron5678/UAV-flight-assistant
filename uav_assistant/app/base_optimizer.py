@@ -1,19 +1,17 @@
 from __future__ import annotations
-
 import asyncio
+import math
 from typing import Sequence, Callable, List, Tuple, Union
-
-from rich.diagnose import report
-
-from uav_assistant.infra.preprocess.post_run import post_run_energy
-from uav_assistant.infra.preprocess.prerun import pre_run_energy
 from uav_assistant.app.interfaces import PathOptimizer
 from uav_assistant.cross.sockets import TraceFn, TraceQueue
 from uav_assistant.domain.metrics import build_distance_matrix, distance_m, build_id2wp
-from uav_assistant.domain.models import (AlgoSettings, Mission, Drone, Waypoint, Path, OptimizerFinal,
-                                         OptimizerDiagnostic, OptimizerRouteValidation, OptimizerStep)
+from uav_assistant.domain.models import (AlgoSettings, Mission, Drone, Waypoint, Path, OptimizerFinal, OptimizerError,
+                                         OptimizerStep)
 
 Runner = Callable[..., tuple[list[int], float]]
+
+def is_infeasible(cost: float) -> bool:
+    return not math.isfinite(cost)
 
 
 def _validate(mission: Mission, candidates: Sequence[Waypoint]) -> None:
@@ -31,7 +29,13 @@ def _build_settings(mission: Mission, drones: Sequence[Drone]) -> AlgoSettings:
         generations=mission.generations,
         population_size=mission.population_size,
         battery_wh=drones[0].battery_capacity_wh,
+        speed_mps=drones[0].speed_mps,
         per_meter_wh=per_meter_wh,
+        keep_elitism=mission.keep_elitism,
+        mutation_probability=mission.mutation_probability,
+        sigma0=mission.sigma0,
+        k_tournament=mission.k_tournament,
+        seed=mission.seed,
         reserve_ratio=0.0,
         station_penalty_m=200.0,
         station_threshold=0.0
@@ -70,29 +74,12 @@ class BasePathOptimizer(PathOptimizer):
         )
 
     async def optimize_http(self, mission: Mission, drones: Sequence[Drone], candidates: Sequence[Waypoint]) -> \
-            Tuple[Union[Path | OptimizerDiagnostic | OptimizerRouteValidation], List[OptimizerStep]]:
+            Tuple[Union[Path | OptimizerError], List[OptimizerStep]]:
 
         _validate(mission, candidates)
         points = list(candidates)
         graph = build_distance_matrix(points)
         settings = _build_settings(mission, drones)
-        obj = getattr(settings.objective, "value", settings.objective)
-
-        if str(obj).upper() == "ENERGY":
-            report_http = pre_run_energy(
-                points=points,
-                end_id=mission.end_waypoint_id,
-                settings=settings,
-                allow_finish_without_station=True,
-            )
-            if not report_http.feasible:
-                return OptimizerDiagnostic(
-                type="diagnostic",
-                feasible=report_http.feasible,
-                max_leg_m=report_http.max_leg_m,
-                problems=report_http.problems,
-            ), []
-
         steps: list[OptimizerStep] = []
 
         def trace(step: OptimizerStep) -> None:
@@ -107,35 +94,22 @@ class BasePathOptimizer(PathOptimizer):
             settings,
             trace,
         )
-        print(f"Bad fitness: {best_cost}")
 
-        if str(obj).upper() == "ENERGY":
-            id2wp = build_id2wp(points)
-            post = post_run_energy(
-                best_route_ids,
-                id2wp,
-                battery_wh=float(settings.battery_wh),
-                per_meter_wh=float(settings.per_meter_wh),
-                reserve_ratio=float(settings.reserve_ratio),
-            )
-            print(f"Bad fitness: {post.feasible}")
-            if not post.feasible:
-                return OptimizerRouteValidation(type="route_validation",
-                                                objective="ENERGY",
-                                                feasible=False,
-                                                report=post), []
+        if is_infeasible(best_cost):
+            return OptimizerError(type="diagnostic", feasible=False, problem="Impossible to construct path!"), []
+
 
         total_dist = _compute_total_distance(best_route_ids, points)
         return Path(waypoint_ids=list(best_route_ids), total_distance_m=total_dist, cost=float(best_cost)), steps
 
     def optimize_ws(
-        self,
-        mission: Mission,
-        drones: Sequence[Drone],
-        candidates: Sequence[Waypoint],
-        loop: asyncio.AbstractEventLoop,
-        queue: TraceQueue,
-        trace: TraceFn | None,
+            self,
+            mission: Mission,
+            drones: Sequence[Drone],
+            candidates: Sequence[Waypoint],
+            loop: asyncio.AbstractEventLoop,
+            queue: TraceQueue,
+            trace: TraceFn | None,
     ) -> None:
         _validate(mission, candidates)
 
@@ -144,23 +118,6 @@ class BasePathOptimizer(PathOptimizer):
         settings = _build_settings(mission, drones)
 
         def worker() -> None:
-            obj = getattr(settings.objective, "value", settings.objective)
-            if str(obj).upper() == "ENERGY":
-                report_ws = pre_run_energy(
-                    points=points,
-                    end_id=mission.end_waypoint_id,
-                    settings=settings,
-                )
-                if not report_ws.feasible:
-                    diag = OptimizerDiagnostic(
-                        type="diagnostic",
-                        feasible=report_ws.feasible,
-                        max_leg_m=report_ws.max_leg_m,
-                        problems=report_ws.problems,
-                    )
-                    loop.call_soon_threadsafe(queue.put_nowait, diag)
-                    return
-
             best_route_ids, best_cost = self._run(
                 points=points,
                 start_id=mission.start_waypoint_id,
@@ -170,22 +127,14 @@ class BasePathOptimizer(PathOptimizer):
                 trace=trace,
             )
 
-            if str(obj).upper() == "ENERGY":
-                id2wp = build_id2wp(points)
-                post = post_run_energy(
-                    best_route_ids,
-                    id2wp,
-                    battery_wh=float(settings.battery_wh),
-                    per_meter_wh=float(settings.per_meter_wh),
-                    reserve_ratio=float(settings.reserve_ratio),
-                )
-                if not post.feasible:
-                    diag = OptimizerRouteValidation(type="route_validation",
-                                                    objective="ENERGY",
-                                                    feasible=False,
-                                                    report=post)
-                    loop.call_soon_threadsafe(queue.put_nowait, diag)
-                    return
+            # if is_infeasible(best_cost):
+            #     diag = OptimizerError(
+            #         type="diagnostic",
+            #         feasible=False,
+            #         problem="Path is impossible to construct",
+            #     )
+            #     loop.call_soon_threadsafe(queue.put_nowait, diag)
+            #     return
 
             total_dist = _compute_total_distance(best_route_ids, points)
             final_event = OptimizerFinal(
@@ -196,4 +145,5 @@ class BasePathOptimizer(PathOptimizer):
                 total_distance_m=total_dist,
             )
             loop.call_soon_threadsafe(queue.put_nowait, final_event)
+
         loop.run_in_executor(None, worker)

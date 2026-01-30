@@ -10,6 +10,11 @@ export interface Path {
     generations: number;
     population_size: number;
     algo: Algo;
+    seed?: number | null;
+    sigma0?: number | null;
+    mutationProbability?: number | null;
+    keepElitism?: number | null;
+    kTournament?: number | null;
 }
 
 export interface PathState {

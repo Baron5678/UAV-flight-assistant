@@ -1,12 +1,9 @@
-
 from __future__ import annotations
-from typing import List
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.domain.models import Waypoint as DomWaypoint, GeoPoint, WaypointRole
 from uav_assistant.app.interfaces import WaypointRepository
 from uav_assistant.infra.db.models import Waypoint as DbWaypoint, MissionWaypoint
-
 
 def to_domain(db_wp: DbWaypoint) -> DomWaypoint:
     return DomWaypoint(
@@ -14,9 +11,9 @@ def to_domain(db_wp: DbWaypoint) -> DomWaypoint:
         name=db_wp.name,
         position=GeoPoint(lat=db_wp.latitude, lon=db_wp.longitude),
         role=WaypointRole(db_wp.role.value if hasattr(db_wp.role, "value") else db_wp.role),
-        loss_chance=db_wp.loss_chance,
+        wind_speed=db_wp.wind_speed,
+        wind_direction=db_wp.wind_direction,
     )
-
 
 class SqlAlchemyWaypointRepository(WaypointRepository):
     def __init__(self, session: AsyncSession) -> None:
@@ -28,11 +25,11 @@ class SqlAlchemyWaypointRepository(WaypointRepository):
             latitude=waypoint.position.lat,
             longitude=waypoint.position.lon,
             role=waypoint.role,
-            loss_chance=waypoint.loss_chance,
+            wind_speed=waypoint.wind_speed,
+            wind_direction=waypoint.wind_direction,
         )
         self.session.add(db_wp)
         await self.session.flush()
-
         return to_domain(db_wp)
 
     async def get_all(self) -> list[DomWaypoint]:

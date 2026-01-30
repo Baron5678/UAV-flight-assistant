@@ -3,6 +3,8 @@ export interface AddWaypointRequestDto {
   lat: number;
   lon: number;
   role: WaypointRole;
+  wind_speed: number;
+  wind_direction: number;
   name: string;
 }
 
@@ -10,6 +12,8 @@ export interface AddWaypointResponseDto {
   id: number;
   lat: number;
   lng: number;
+  wind_speed: number;
+  wind_direction: number;
   role: WaypointRole;
   name: string;
 }

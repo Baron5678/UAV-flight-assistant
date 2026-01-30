@@ -15,3 +15,4 @@ class ObjectiveFunction(enum.StrEnum):
     ENERGY = "ENERGY"
     WEATHER = "WEATHER"
 
+INFEASIBLE_COST = float("inf")

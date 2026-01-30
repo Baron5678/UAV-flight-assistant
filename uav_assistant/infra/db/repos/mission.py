@@ -1,16 +1,10 @@
 from __future__ import annotations
-
-from imaplib import Literal
-from typing import List
-
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.cross.enums import Status, ObjectiveFunction
-from uav_assistant.cross.parser import parse_literal
 from uav_assistant.domain.models import Mission
 from uav_assistant.app.interfaces import MissionRepository
 from uav_assistant.infra.db.models import Mission as DbMission, MissionWaypoint
-from uav_assistant.infra.objective_functions.objectives import Objectives
 
 
 def to_domain(db: DbMission) -> Mission:
@@ -26,6 +20,11 @@ def to_domain(db: DbMission) -> Mission:
         best_cost=db.best_cost,
         status=Status(db.status),
         objective=ObjectiveFunction(db.objective),
+        keep_elitism=db.keep_elitism,
+        mutation_probability = db.mutation_probability,
+        sigma0=db.sigma0,
+        k_tournament=db.k_tournament,
+        seed=db.seed,
     )
 
 

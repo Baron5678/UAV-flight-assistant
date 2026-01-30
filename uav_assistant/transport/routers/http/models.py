@@ -1,7 +1,8 @@
 from __future__ import annotations
-from pydantic import BaseModel, Field
-from typing import List, Optional, Tuple, Literal
+from pydantic import BaseModel
+from typing import List, Tuple
 from uav_assistant.cross.enums import WaypointRole
+
 
 class PathMeta(BaseModel):
     waypoint_ids: List[int]
@@ -20,29 +21,46 @@ class StartMissionRequest(BaseModel):
     generations: int = 0
     population_size: int = 0
     algo: str = "GA"
+    seed: int = 127
+    mutation_probability: float = 0.1
+    keep_elitism: int = 5
+    k_tournament: int = 3
+    sigma0: float = 0.25
+
 
 class StartMissionResponse(BaseModel):
     mission_id: int
 
+
 class FinishMissionRequest(PathMeta):
     mission_id: int
+
 
 class CancelMissionRequest(BaseModel):
     mission_id: int
 
+
 class DeleteWaypointRequest(BaseModel):
     waypoint_id: int
+
 
 class DroneRequest(BaseModel):
     battery_capacity_wh: float = 2000.0
     wh_per_km: float = 10.0
+    speed_mps: float = 20.0
     reserve_ratio: float = 0.2
+
 
 class PathRequest(BaseModel):
     mission_id: int
     generations: int = 30
     population_size: int = 20
     algo: str = "GA"
+    seed: int | None = None
+    mutation_probability: float | None = None
+    keep_elitism: int | None = None
+    k_tournament: int | None = None
+    sigma0: float | None = None
     drone: DroneRequest | None = None
 
 class PathResponse(PathMeta):
@@ -52,46 +70,32 @@ class WaypointRequest(BaseModel):
     lon: float = 0.0
     lat: float = 0.0
     role: WaypointRole = WaypointRole.REQUIRED
+    wind_speed: float = 0.0
+    wind_direction: float = 0.0
     name: str = ""
     loss_chance: float = 0.2
+
 
 class WaypointResponse(BaseModel):
     id: int
     lat: float
     lng: float
     role: str
+    wind_speed: float
+    wind_direction: float
     color: str
     name: str | None = None
 
-class UnreachableRequiredResponse(BaseModel):
-    required_id: int
-    nearest_station_id: int
-    dist_required_to_station_m: float
-    max_leg_m: float
-    nearest_required_id: Optional[int] = None
-    dist_required_to_required_m: Optional[float] = None
+class RestoreWaypointsResponse(BaseModel):
+    mission_id: int
+    path_id: int
+    waypoints: List[WaypointResponse]
 
-class PreRunReportResponse(BaseModel):
-    type: Literal["diagnostic"] = "diagnostic"
+class OptimizerErrorResponse(BaseModel):
+    type: str
     feasible: bool
-    max_leg_m: float
-    problems: List[UnreachableRequiredResponse]
+    message: str
 
-class RouteEnergyFailureResponse(BaseModel):
-    from_id: int
-    to_id: int
-    dist_m: float
-    soc_wh: float
-    reserve_wh: float
-    needed_wh: float
-    deficit_wh: float
-    deficit_m: float
-
-class PostRunRouteValidationResponse(BaseModel):
-    type: Literal["route_validation"] = "route_validation"
-    feasible: Literal[False] = False
-    objective: Literal["ENERGY"] = "ENERGY"
-    failure: RouteEnergyFailureResponse
 
 class PathSummaryRowResponse(BaseModel):
     generation: int

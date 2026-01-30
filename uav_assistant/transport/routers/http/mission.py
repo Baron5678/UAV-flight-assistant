@@ -49,6 +49,8 @@ async def start_mission(
             detail="start_waypoint_id and end_waypoint_id must differ",
         )
 
+    print(f"Objective: {body.objective}")
+
     mission_repo = SqlAlchemyMissionRepository(session)
 
     mission = Mission(
@@ -63,9 +65,12 @@ async def start_mission(
         best_cost=0.0,
         status=Status.PENDING,
         objective=ObjectiveFunction(body.objective),
+        keep_elitism=body.keep_elitism,
+        k_tournament=body.k_tournament,
+        mutation_probability=body.mutation_probability,
+        sigma0=body.sigma0,
+        seed=body.seed
     )
-    print(body.objective)
-    print(mission.objective)
 
 
     mission = await mission_repo.add(mission)

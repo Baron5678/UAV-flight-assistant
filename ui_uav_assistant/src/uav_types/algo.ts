@@ -5,4 +5,9 @@ export interface AlgoSettings {
   generations: number;
   populationSize: number;
   objectiveFunction: Objective;
+  seed: number
+  sigma0: number
+  mutationProbability: number
+  keepElitism: number
+  kTournament: number
 }

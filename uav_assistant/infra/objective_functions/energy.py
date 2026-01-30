@@ -3,12 +3,11 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping, Sequence
 import numpy as np
 
-from uav_assistant.cross.enums import WaypointRole
+from uav_assistant.cross.enums import WaypointRole, INFEASIBLE_COST
 from uav_assistant.domain.metrics import distance_m, estimate_energy_wh
 from uav_assistant.domain.models import Waypoint, AlgoSettings
 
-DEFAULT_BAD_COST = 1.0e14
-DEFAULT_BAD_FITNESS = -1.0e14
+
 
 def _role_upper(wp: Any) -> str:
     r = getattr(wp, "role", None)
@@ -92,10 +91,7 @@ def energy_cost(
     battery_wh: float,
     per_meter_wh: float,
     reserve_ratio: float,
-    station_penalty_m: float = 0.0,
-    bad_cost: float = DEFAULT_BAD_COST,
 ) -> float:
-    # 1) Repair route by inserting stations when needed
     repaired_ids, feasible, station_visits = insert_stations_if_needed(
         route_ids,
         id2wp,
@@ -104,32 +100,26 @@ def energy_cost(
         reserve_ratio=reserve_ratio,
     )
 
-    for cur_id in repaired_ids:
-       print(f"{cur_id},")
-    print("---------")
-
     if not feasible:
-        return float(bad_cost)
+        return float(INFEASIBLE_COST)
 
-    # 2) Compute distance cost on repaired route
     total_dist = 0.0
     for a, b in zip(repaired_ids, repaired_ids[1:]):
         wp_a = id2wp[a]
         wp_b = id2wp[b]
         d = float(distance_m(wp_a.position, wp_b.position))
         if not np.isfinite(d) or d < 0:
-            return float(bad_cost)
+            return INFEASIBLE_COST
         total_dist += d
 
     cost = float(total_dist + 20 * station_visits)
-    return cost if np.isfinite(cost) else float(bad_cost)
+    return cost if np.isfinite(cost) else float(INFEASIBLE_COST)
 
 def build_energy_ga(
     *,
     decode: Callable[[np.ndarray], Sequence[int]],
     points: Sequence[Waypoint],
     settings: AlgoSettings,
-    bad_fitness: float = DEFAULT_BAD_FITNESS,
     **kwargs,
 ) -> Callable:
     def fitness_func(ga, sol, idx):
@@ -142,10 +132,10 @@ def build_energy_ga(
             battery_wh=settings.battery_wh,
             per_meter_wh=settings.per_meter_wh,
             reserve_ratio=settings.reserve_ratio,
-            station_penalty_m=settings.station_penalty_m,
         )
-        if cost >= DEFAULT_BAD_COST or (not np.isfinite(cost)):
-            return float(bad_fitness)
+        if not np.isfinite(cost):
+            return -INFEASIBLE_COST
+
         return -float(cost)
 
     return fitness_func
@@ -156,7 +146,6 @@ def build_energy_es(
     decode: Callable[[np.ndarray], Sequence[int]],
     points: Sequence[Waypoint],
     settings: AlgoSettings,
-    bad_cost: float = DEFAULT_BAD_COST,
     **kwargs,
 ) -> Callable[[np.ndarray], float]:
     def objective(x: np.ndarray) -> float:
@@ -170,8 +159,6 @@ def build_energy_es(
                 battery_wh=settings.battery_wh,
                 per_meter_wh=settings.per_meter_wh,
                 reserve_ratio=settings.reserve_ratio,
-                station_penalty_m=settings.station_penalty_m,
-                bad_cost=bad_cost,
             )
         )
 

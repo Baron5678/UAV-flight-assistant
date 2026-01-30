@@ -23,29 +23,34 @@ export function generatePathHttpHandler(args: GeneratePathHttpHandlerArgs) {
     }
 
     const dto = buildGeneratePathRequest({
-      missionId: args.mission.id,
-      algo: args.algoSettings.algo,
-      generations: args.algoSettings.generations,
-      populationSize: args.algoSettings.populationSize,
-      batteryWh: args.drone.batteryWh,
-      whPerKm: args.drone.whPerKm,
+        missionId: args.mission.id,
+        algo: args.algoSettings.algo,
+        generations: args.algoSettings.generations,
+        populationSize: args.algoSettings.populationSize,
+        batteryWh: args.drone.batteryWh,
+        whPerKm: args.drone.whPerKm,
         objectiveFunction: args.algoSettings.objectiveFunction,
-      reserveRatio: args.drone.reserveRatio,
+        reserveRatio: args.drone.reserveRatio,
+        seed: args.algoSettings.seed ?? null,
+        mutationProbability: args.algoSettings.mutationProbability ?? null,
+        keepElitism: args.algoSettings.keepElitism ?? null,
+        kTournament: args.algoSettings.kTournament ?? null,
+        sigma0: args.algoSettings.sigma0 ?? null,
+
     });
     console.log(dto)
     const res:ResponseUAV<PathPreviewHttpResponse> = await make_request("path.preview", dto);
-
+    console.log(res)
     if (res.failed) {
       args.tracer.log(res.error);
       return;
     }
 
-    if (res.body.type === "route_validation") {
+    if (res.body.type === "diagnostic") {
         args.tracer.log(JSON.stringify(res.body));
         args.path.setPath(null);
         return;
     }
-
 
     const path: Path = {
         waypoint_ids: res.body.waypoint_ids,
@@ -54,6 +59,11 @@ export function generatePathHttpHandler(args: GeneratePathHttpHandlerArgs) {
         total_distance_m: res.body.total_distance_m,
         generations: res.body.generations,
         population_size: res.body.population_size,
+        keepElitism: res.body.keep_elitism,
+        mutationProbability: res.body.mutation_probability,
+        seed: res.body.seed,
+        sigma0: res.body.sigma0,
+        kTournament: res.body.k_tournament,
         algo: res.body.algo,
     };
 

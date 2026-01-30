@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Protocol, Sequence, Iterable
+from typing import Protocol, Sequence, Iterable, Tuple, Union, List
 
 from uav_assistant.cross.sockets import TraceFn
-from uav_assistant.domain.models import Waypoint, Mission, Path, Drone, PathSummary
+from uav_assistant.domain.models import Waypoint, Mission, Path, Drone, PathSummary, OptimizerError, OptimizerStep
 from uav_assistant.cross.sockets import TraceQueue
 
 
@@ -42,7 +42,7 @@ class PathOptimizer(Protocol):
             mission: Mission,
             drones: Sequence[Drone],
             candidates: Sequence[Waypoint],
-    ) -> Path:
+    ) ->   Tuple[Union[Path | OptimizerError], List[OptimizerStep]]:
         ...
 
     def optimize_ws(

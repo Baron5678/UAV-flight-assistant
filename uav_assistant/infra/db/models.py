@@ -12,7 +12,6 @@ from sqlalchemy import (
 
 from uav_assistant.cross.enums import WaypointRole
 
-
 class Base(DeclarativeBase):
     pass
 
@@ -40,11 +39,18 @@ class Waypoint(Base):
         server_default=WaypointRole.REQUIRED,
     )
 
-    loss_chance: Mapped[float] = mapped_column(
+    wind_speed: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        default=0.2,
-        server_default="0.2",
+        default=20.0,
+        server_default="20.0",
+    )
+
+    wind_direction: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=20.0,
+        server_default="20.0",
     )
 
     def __repr__(self) -> str:
@@ -68,13 +74,13 @@ class Drone(Base):
     speed: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        server_default="4.0",  # m/s
+        server_default="4.0",
     )
 
     payload: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        server_default="4.0",  # kg
+        server_default="4.0",
     )
 
 class Mission(Base):
@@ -121,6 +127,40 @@ class Mission(Base):
         nullable=False,
         default=20,
         server_default="20",
+    )
+
+    seed: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=127,
+        server_default="127",
+    )
+    mutation_probability: Mapped[int] = mapped_column(
+        Float,
+        nullable=False,
+        default=20,
+        server_default="0.1",
+    )
+
+    keep_elitism: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=10,
+        server_default="10",
+    )
+
+    k_tournament: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=3,
+        server_default="3",
+    )
+
+    sigma0: Mapped[int] = mapped_column(
+        Float,
+        nullable=False,
+        default=0.25,
+        server_default="0.25",
     )
 
     best_cost: Mapped[float] = mapped_column(

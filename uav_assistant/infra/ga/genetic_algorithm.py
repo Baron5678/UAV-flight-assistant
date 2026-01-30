@@ -9,7 +9,6 @@ from uav_assistant.infra.ga.population import build_initial_population
 from uav_assistant.infra.objective_functions.decoders import Decoders
 from uav_assistant.infra.objective_functions.energy import insert_stations_if_needed
 from uav_assistant.infra.objective_functions.objectives import Objectives
-from uav_assistant.infra.preprocess.prerun import pre_run_energy
 
 
 def build_on_generation(trace: TraceFn | None, decode_fn):
@@ -87,17 +86,19 @@ def run(
         initial_population=init_pop,
         fitness_func=fitness_func,
         parent_selection_type="tournament",
-        K_tournament=3,
-        keep_elitism=max(1, settings.population_size // 10),
+        K_tournament=settings.k_tournament,
+        keep_elitism=settings.keep_elitism,
         mutation_type="random",
-        mutation_probability=0.12,
+        mutation_probability=settings.mutation_probability,
         crossover_type="scattered",
         keep_parents=max(1, settings.population_size // 40),
         allow_duplicate_genes=True,
         save_best_solutions=True,
-        random_seed=127,
+        random_seed=settings.seed,
         on_generation=on_generation,
     )
+
+    print("Musrattions:", settings.mutation_probability)
 
     ga.run()
 

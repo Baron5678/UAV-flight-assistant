@@ -68,6 +68,12 @@ export function usePathsWS(args: UsePathsWSArgs): UsePathsWSResult {
         onGeneration: (raw: PathProgressEvent) => {
           const msg = unwrapPayload(raw);
           if (msg.type === "generation") {
+              if (!msg.is_feasible) {
+                  setPathCoords(null);
+                  setPathCost(null);
+                  if (msg.message) args.onTrace?.(String(msg.message));
+                  return;
+              }
               setPathCost(msg.cost ?? null);
               console.log(msg.cost)
               setPathCoords((msg.waypoint_coords as LatLonTuple[]) ?? null);
@@ -83,6 +89,21 @@ export function usePathsWS(args: UsePathsWSArgs): UsePathsWSResult {
               const generations =
                   (msg.generation as number | undefined) ?? requestBody.generations;
               const population_size = requestBody.population_size;
+              const keepElitism = msg.keepElitism;
+              const mutationProbability = msg.mutationProbability;
+              const sigma0 = msg.sigma0;
+              const seed= msg.seed;
+              const kTournament = msg.kTournament;
+
+
+              if(!msg.is_feasible){
+                  setPath(null)
+                  setPathCoords(null);
+                  setPathCost(null);
+                  if (msg.message) args.onTrace?.(String(msg.message));
+                  wsRef.current = null;
+                  return;
+              }
 
               const finalPath: Path = {
                   waypoint_ids: (msg.waypoint_ids as number[]) ?? [],
@@ -91,12 +112,14 @@ export function usePathsWS(args: UsePathsWSArgs): UsePathsWSResult {
                   total_distance_m: (msg.total_distance_m as number) ?? 0,
                   generations,
                   population_size,
+                  keepElitism,
+                  kTournament,
+                  mutationProbability,
+                  sigma0,
+                  seed,
                   algo: (msg.algo as any) ?? (requestBody.algo as any),
               };
 
-                              console.log(finalPath)
-
-              console.log(finalPath.cost)
               setPath(finalPath);
               setPathCost(finalPath.cost);
               setPathCoords(finalPath.waypoint_coords);

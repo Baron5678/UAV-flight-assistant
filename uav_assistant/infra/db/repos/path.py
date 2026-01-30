@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.domain.models import Path as DomPath
 from uav_assistant.app.interfaces import PathRepository
@@ -53,6 +53,25 @@ class SqlAlchemyPathRepository(PathRepository):
             total_distance_m=db_path.distance_m,
             cost=db_path.cost,
         )
+
+    async def get_latest_path_id(self, mission_id: int) -> int | None:
+        stmt = (
+            select(DbPath.id)
+            .where(DbPath.mission_id == mission_id)
+            .order_by(desc(DbPath.id))
+            .limit(1)
+        )
+        res = await self.session.execute(stmt)
+        return res.scalar_one_or_none()
+
+    async def get_ordered_waypoint_ids(self, path_id: int) -> list[int]:
+        stmt = (
+            select(DbPathWaypoint.waypoint_id)
+            .where(DbPathWaypoint.path_id == path_id)
+            .order_by(DbPathWaypoint.seq)
+        )
+        res = await self.session.execute(stmt)
+        return [int(x) for x in res.scalars().all()]
 
     async def save_for_mission(self, mission_id: int, path: DomPath) -> DomPath:
         db_path = DbPath(

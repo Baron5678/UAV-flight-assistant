@@ -5,9 +5,8 @@ import numpy as np
 
 from uav_assistant.domain.models import Waypoint
 
-from uav_assistant.infra.objective_functions import distance, energy
+from uav_assistant.infra.objective_functions import distance, energy, weather
 
-ObjectiveName = Literal["DISTANCE", "ENERGY", "WEATHER"]
 
 GeneSelector = Callable[[Sequence[Waypoint], int, int], list[int]]
 DecodeFn = Callable[[np.ndarray], list[int]]
@@ -16,13 +15,13 @@ DecoderBuilder = Callable[..., DecodeFn]
 
 
 class Decoders:
-    GENES: Dict[ObjectiveName, GeneSelector] = {
+    GENES: Dict[str, GeneSelector] = {
         "DISTANCE": distance.select_genes,
         "ENERGY": energy.select_genes,
-        # "WEATHER": ... later
+        "WEATHER": weather.select_genes,
     }
-    BUILD: Dict[ObjectiveName, DecoderBuilder] = {
+    BUILD: Dict[str, DecoderBuilder] = {
         "DISTANCE": distance.build_decoder,
         "ENERGY": energy.build_decoder,
-        # "WEATHER": ... later
+        "WEATHER": weather.build_decoder,
     }

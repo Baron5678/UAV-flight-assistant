@@ -46,7 +46,8 @@ export function parseErrorBody(
 
 export async function make_request<TResponse, TRequestBody>(key: RouteKey,
                                                             body: TRequestBody,
-                                                            pathParams?: Record<string, string | number>)
+                                                            pathParams?: Record<string, string | number>,
+                                                            queryParams?: Record<string, string | number | undefined>)
     :Promise<ResponseUAV<TResponse>> {
     const route = ROUTES[key];
 
@@ -56,7 +57,16 @@ export async function make_request<TResponse, TRequestBody>(key: RouteKey,
             path = path.replaceAll(`{${k}}`, encodeURIComponent(String(v)));
         }
     }
+    if (queryParams) {
+        const qs = Object.entries(queryParams)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+            .join("&");
 
+        if (qs.length > 0) {
+            path += `?${qs}`;
+        }
+    }
     const url = `${SERVER_URL}${path}`;
 
     const init: RequestInit = {

@@ -1,15 +1,9 @@
 
 from __future__ import annotations
 
-import string
 from dataclasses import dataclass
-
-from pydantic import BaseModel
-from pydantic_core.core_schema import dataclass_args_schema
-
 from uav_assistant.cross.enums import WaypointRole, Status, ObjectiveFunction
-from typing import List, Optional, Literal, Sequence, Tuple, Union
-
+from typing import List, Optional, Literal, Sequence
 
 @dataclass(frozen=True)
 class GeoPoint:
@@ -22,6 +16,8 @@ class Waypoint:
     name: str
     position: GeoPoint
     role: WaypointRole
+    wind_speed: float
+    wind_direction: float
     loss_chance: float = 0.2
 
 @dataclass
@@ -40,12 +36,6 @@ class Drone:
     mass_kg: Optional[float] = None
     per_meter_wh: Optional[float] = None
 
-@dataclass(frozen=True)
-class PathSummary:
-    mission_id: int
-    generation: int
-    cost: float
-    total_distance_m: float
 
 @dataclass
 class Mission:
@@ -57,29 +47,39 @@ class Mission:
     algo: str
     generations: int
     population_size: int
+    seed: Optional[int]
+    mutation_probability: Optional[float]
+    keep_elitism: Optional[int]
+    k_tournament: Optional[int]
+    sigma0: Optional[float]
     best_cost: Optional[float]
-    objective: ObjectiveFunction
+    objective: ObjectiveFunction = ObjectiveFunction.DISTANCE
     status: Status = Status.PENDING
 
 @dataclass
 class AlgoSettings:
     generations: int
     population_size: int
+    seed: Optional[int]
+    mutation_probability: Optional[float]
+    keep_elitism: Optional[int]
+    k_tournament: Optional[int]
+    sigma0: Optional[float]
     battery_wh: float
     per_meter_wh: float
+    speed_mps: float
     reserve_ratio: float
     station_threshold: float
     station_penalty_m: float
-    objective: Literal["DISTANCE", "ENERGY", "WEATHER"] = "DISTANCE"
+    objective: str
 
-@dataclass(frozen=True)
+@dataclass
 class OptimizerStep:
     generation: int
     cost: float
     waypoint_ids: Sequence[int]
 
-
-@dataclass(frozen=True)
+@dataclass
 class OptimizerFinal:
     algo: str
     generations: int
@@ -88,49 +88,17 @@ class OptimizerFinal:
     total_distance_m: float
 
 @dataclass(frozen=True)
-class OptimizerDiagnostic:
-    type: Literal["diagnostic"]
+class OptimizerError:
+    type: str
     feasible: bool
-    max_leg_m: float
-    problems: Sequence[UnreachableRequired]
+    problem: str
 
 @dataclass(frozen=True)
-class UnreachableRequired:
-    required_id: int
-    nearest_station_id: int
-    dist_required_to_station_m: float
-    max_leg_m: float
-    nearest_required_id: Optional[int]
-    dist_required_to_required_m: Optional[float]
-
-@dataclass(frozen=True)
-class PreRunReport:
-    feasible: bool
-    max_leg_m: float
-    problems: list[UnreachableRequired]
-
-@dataclass(frozen=True)
-class RouteEnergyFailure:
-    from_id: int
-    to_id: int
-    dist_m: float
-    soc_wh: float
-    reserve_wh: float
-    needed_wh: float  # energy for the leg
-
-@dataclass(frozen=True)
-class PostRunReport:
-    feasible: bool
-    total_dist_m: float
-    station_visits: int
-    failure: Optional[RouteEnergyFailure] = None
-
-@dataclass(frozen=True)
-class OptimizerRouteValidation:
-    type: Literal["route_validation"]  # distinguishable in WS/HTTP
-    objective: str                     # e.g. "ENERGY"
-    feasible: bool
-    report: PostRunReport
+class PathSummary:
+    mission_id: int
+    generation: int
+    cost: float
+    total_distance_m: float
 
 @dataclass(frozen=True)
 class PathSummaryStats:

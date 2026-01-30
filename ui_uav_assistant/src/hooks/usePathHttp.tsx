@@ -44,7 +44,6 @@ export function usePathsHttp(args: UsePathsHttpArgs): UsePathsHttpResult {
 
   function clearPath(): void {
     setPath(null);
-
   }
 
   return {

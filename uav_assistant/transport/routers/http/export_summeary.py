@@ -16,6 +16,22 @@ from uav_assistant.app.services.path_summary import PathSummaryService
 
 router = APIRouter(tags=["export"])
 
+def _write_final_paths_csv(
+    buf: io.StringIO,
+    rows: Iterable[tuple[int, str, str, int, float, float]],
+) -> None:
+    w = csv.writer(buf)
+    w.writerow([
+        "mission_id",
+        "algo",
+        "objective",
+        "generation",
+        "cost",
+        "total_distance_m",
+    ])
+    for mission_id, algo, objective, gen, cost, dist_m in rows:
+        w.writerow([mission_id, algo, objective, gen, cost, dist_m])
+
 
 def _write_stats_csv(
     buf: io.StringIO,
@@ -97,17 +113,30 @@ async def export_all_csv_zip(
 
     summary_repo = SqlAlchemyPathSummaryRepository(session)
     summary_svc = PathSummaryService(summary_repo)
+    path_evolve_by_algo: dict[str, list[tuple[int, str, str, int, float, float]]] = {}
+    final_by_algo: dict[str, list[tuple[int, str, str, int, float, float]]] = {}
+    stats_by_algo: dict[str, list[dict]] = {}
 
-    path_evolve_rows: list[tuple[int, str, str, int, float, float]] = []
-    stats_rows: list[dict] = []
+    def algo_slug(algo: str) -> str:
+        # normalize file prefix: "GA" -> "ga"
+        return str(algo).strip().lower()
 
     for m in missions:
         mid = int(m.id)
-        sums = await summary_svc.list_summaries(mid)
         algo = str(getattr(m.algo, "value", m.algo))
         objective = str(getattr(m.objective, "value", m.objective))
+        algo_key = algo_slug(algo)
+
+        sums = await summary_svc.list_summaries(mid)
+
+        # init buckets
+        path_evolve_by_algo.setdefault(algo_key, [])
+        final_by_algo.setdefault(algo_key, [])
+        stats_by_algo.setdefault(algo_key, [])
+
+        # evolve rows per algo
         for s in sums:
-            path_evolve_rows.append((
+            path_evolve_by_algo[algo_key].append((
                 mid,
                 algo,
                 objective,
@@ -116,15 +145,25 @@ async def export_all_csv_zip(
                 float(s.total_distance_m),
             ))
 
+        # final row per algo
+        if sums:
+            final_s = max(sums, key=lambda x: int(x.generation))
+            final_by_algo[algo_key].append((
+                mid,
+                algo,
+                objective,
+                int(final_s.generation),
+                float(final_s.cost),
+                float(final_s.total_distance_m),
+            ))
+
         st = await summary_svc.compute_stats(mid)
 
-        algo = str(getattr(m.algo, "value", m.algo))
-        objective = str(getattr(m.objective, "value", m.objective))
         status = str(getattr(m.status, "value", m.status))
         mission_best_cost = float(getattr(m, "best_cost", 0.0) or 0.0)
 
         if st is None:
-            stats_rows.append({
+            stats_by_algo[algo_key].append({
                 "mission_id": mid,
                 "algo": algo,
                 "objective": objective,
@@ -147,7 +186,7 @@ async def export_all_csv_zip(
                 "avg_total_distance_m": "",
             })
         else:
-            stats_rows.append({
+            stats_by_algo[algo_key].append({
                 "mission_id": mid,
                 "algo": algo,
                 "objective": objective,
@@ -179,18 +218,25 @@ async def export_all_csv_zip(
                 "avg_total_distance_m": float(st.avg_total_distance_m),
             })
 
-    stats_buf = io.StringIO()
-    _write_stats_csv(stats_buf, stats_rows)
-    stats_csv = stats_buf.getvalue().encode("utf-8")
-
-    evolve_buf = io.StringIO()
-    _write_path_evolve_csv(evolve_buf, path_evolve_rows)
-    evolve_csv = evolve_buf.getvalue().encode("utf-8")
-
     zip_bytes = io.BytesIO()
     with zipfile.ZipFile(zip_bytes, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
-        z.writestr("stats.csv", stats_csv)
-        z.writestr("path_evolve.csv", evolve_csv)
+
+        # ✅ write 3 files per algo
+        for algo_key in sorted(stats_by_algo.keys() | path_evolve_by_algo.keys() | final_by_algo.keys()):
+            # stats
+            stats_buf = io.StringIO()
+            _write_stats_csv(stats_buf, stats_by_algo.get(algo_key, []))
+            z.writestr(f"{algo_key}_stats.csv", stats_buf.getvalue().encode("utf-8"))
+
+            # evolve
+            evolve_buf = io.StringIO()
+            _write_path_evolve_csv(evolve_buf, path_evolve_by_algo.get(algo_key, []))
+            z.writestr(f"{algo_key}_path_evolve.csv", evolve_buf.getvalue().encode("utf-8"))
+
+            # final
+            final_buf = io.StringIO()
+            _write_final_paths_csv(final_buf, final_by_algo.get(algo_key, []))
+            z.writestr(f"{algo_key}_final_paths.csv", final_buf.getvalue().encode("utf-8"))
 
     zip_bytes.seek(0)
 

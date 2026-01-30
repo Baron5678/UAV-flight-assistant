@@ -22,6 +22,7 @@ export function startPathProgressWS(args: StartPathProgressArgs): WebSocket {
       msg = JSON.parse(event.data);
       console.log(msg)
     } catch {
+        console.log(event.data)
       args.onError?.("WS parse error: non-JSON message received");
       return;
     }

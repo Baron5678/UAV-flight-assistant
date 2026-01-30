@@ -63,7 +63,8 @@ def run(
             "popsize": int(pop_size),
             "bounds": [0.0, 1.0],
             "maxiter": int(generations),
-            "seed": 127,
+            "seed": settings.seed,
+            "tolstagnation": int(generations),
             "verb_disp": 1,
         },
     )
@@ -96,13 +97,15 @@ def run(
             )
 
     if best_x is None:
-        best_cost = float(objective(x0))
-        best_route = decode_fn(x0)
+        best_x = np.asarray(x0, dtype=float)
+        best_cost = float(objective(best_x))
+        best_route = decode_fn(best_x)
+
+    route_required = decode_fn(best_x)
 
     id2wp: dict[int, Waypoint] = {p.id: p for p in points}
     obj = getattr(settings.objective, "value", settings.objective)
     is_energy = str(obj).upper() == "ENERGY"
-    route_required = decode_fn(best_x)
     if is_energy:
         route_fixed, feasible, _ = insert_stations_if_needed(
             route_required,

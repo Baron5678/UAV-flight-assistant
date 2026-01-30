@@ -37,6 +37,10 @@ export default function App() {
                   <Sidebar
                       role={vm.role}
                       setRole={vm.setRole}
+                      windSpeed={vm.windSpeed}
+                      setWindSpeed={vm.setWindSpeed}
+                      windDirection={vm.windDirection}
+                      setWindDirection={vm.setWindDirection}
                       drone={vm.drone}
                       setDrone={vm.setDrone}
                       algoSettings={vm.algoSettings}
@@ -52,6 +56,8 @@ export default function App() {
                       onGeneratePath={vm.onGeneratePath}
                       onCancelMission={vm.onCancelMission}
                       onResetApplication={vm.onResetApplication}
+                      onRestoreWaypoints={vm.onRestoreWaypointsSafe}
+                      onAddRandomWaypoints={vm.onAddRandomWaypointsSafe}
                   />
                   <div id="map">
                       <MapView
