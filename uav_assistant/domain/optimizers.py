@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from uav_assistant.app.base_optimizer import BasePathOptimizer
 from uav_assistant.app.interfaces import PathOptimizer
-from uav_assistant.infra.ga.genetic_algorithm import run as run_ga
-from uav_assistant.infra.es.es import run as run_es
-from uav_assistant.infra.bf.perm import run as run_bf
+from uav_assistant.infra.ga.genetic_algorithm import solve_path as solve_ga_path
+from uav_assistant.infra.es.es import solve_path as solve_es_path
+from uav_assistant.infra.bf.perm import solve_path as solve_bf_path
 
 RUNNERS = {
-    "GA": run_ga,
-    "ES": run_es,
-    "BF": run_bf
+    "GA": solve_ga_path,
+    "ES": solve_es_path,
+    "BF": solve_bf_path
 }
 
 def build_optimizer(algo: str) -> PathOptimizer:

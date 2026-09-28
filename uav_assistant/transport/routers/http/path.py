@@ -9,7 +9,7 @@ from uav_assistant.domain.models import Drone, OptimizerError
 from uav_assistant.domain.optimizers import build_optimizer
 from uav_assistant.infra.db.postgre import get_session
 from uav_assistant.infra.db.repos.mission import SqlAlchemyMissionRepository
-from uav_assistant.infra.db.repos.path_summary import SqlAlchemyPathSummaryRepository
+from uav_assistant.infra.db.repos.mission_outcome import SqlAlchemyPathSummaryRepository
 from uav_assistant.infra.db.repos.waypoint import SqlAlchemyWaypointRepository
 from uav_assistant.transport.routers.http.models import PathRequest, PathResponse, DroneRequest, OptimizerErrorResponse
 

@@ -1,8 +1,10 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from uav_assistant.settings import DATABASES
 from uav_assistant.transport.routers.http import (waypoint, path, mission, path_summary, export_summeary,
                                                   undo_last_path)
 from uav_assistant.transport.routers.ws import path as ws_path
@@ -21,7 +23,19 @@ TRANSPORT_DIR = BASE_DIR / "transport"
 ROUTING_UI = TRANSPORT_DIR / "static/routing_ui"
 FORECASTING_UI = TRANSPORT_DIR / "static/forecasting_ui"
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        for database in DATABASES:
+            await database.connect()
+        yield
+    finally:
+        for database in reversed(DATABASES):
+            await database.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

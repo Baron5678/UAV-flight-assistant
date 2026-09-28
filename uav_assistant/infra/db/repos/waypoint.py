@@ -1,58 +1,88 @@
 from __future__ import annotations
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from uav_assistant.domain.models import Waypoint as DomWaypoint, GeoPoint, WaypointRole
-from uav_assistant.app.interfaces import WaypointRepository
-from uav_assistant.infra.db.models import Waypoint as DbWaypoint, MissionWaypoint
 
-def to_domain(db_wp: DbWaypoint) -> DomWaypoint:
-    return DomWaypoint(
-        id=db_wp.id,
-        name=db_wp.name,
-        position=GeoPoint(lat=db_wp.latitude, lon=db_wp.longitude),
-        role=WaypointRole(db_wp.role.value if hasattr(db_wp.role, "value") else db_wp.role),
-        wind_speed=db_wp.wind_speed,
-        wind_direction=db_wp.wind_direction,
-    )
+from typing import Sequence
+
+from sqlalchemy import select, delete, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from uav_assistant.domain.models import Waypoint as DomWaypoint
+from uav_assistant.app.interfaces import WaypointRepository
+from uav_assistant.infra.db.postgre.models import Waypoint as DbWaypoint
+from uav_assistant.infra.db.repos.convertors import WaypointConvertor
+from uav_assistant.infra.db.repos.validators import validate_id
+
 
 class SqlAlchemyWaypointRepository(WaypointRepository):
     def __init__(self, session: AsyncSession) -> None:
-        self.session = session
+        self._session = session
 
-    async def add(self, waypoint: DomWaypoint) -> DomWaypoint:
-        db_wp = DbWaypoint(
-            name=waypoint.name,
-            latitude=waypoint.position.lat,
-            longitude=waypoint.position.lon,
-            role=waypoint.role,
-            wind_speed=waypoint.wind_speed,
-            wind_direction=waypoint.wind_direction,
-        )
-        self.session.add(db_wp)
-        await self.session.flush()
-        return to_domain(db_wp)
-
-    async def get_all(self) -> list[DomWaypoint]:
-        stmt = select(DbWaypoint)
-        result = await self.session.execute(stmt)
-        rows = result.scalars().all()
-        return [to_domain(w) for w in rows]
-
-    async def get_for_mission(self, mission_id: int) -> list[DomWaypoint]:
-        stmt = (
+    async def get(self, waypoint_id: int) -> DomWaypoint:
+        validate_id(waypoint_id, "get", "Waypoint")
+        result = await self._session.execute(
             select(DbWaypoint)
-            .join(MissionWaypoint, MissionWaypoint.waypoint_id == DbWaypoint.id)
-            .where(MissionWaypoint.mission_id == mission_id)
+            .options(selectinload(DbWaypoint.mission))
+            .where(DbWaypoint.id == waypoint_id)
         )
-        result = await self.session.execute(stmt)
-        rows = result.scalars().all()
-        return [to_domain(w) for w in rows]
+        db_waypoint = result.scalar_one_or_none()
+        if db_waypoint is None:
+            raise ValueError(f"[get]: Waypoint with id {waypoint_id} not found")
+        return WaypointConvertor.to_domain(db_waypoint)
+
+    async def create(self, mission_id: int, waypoint: DomWaypoint) -> int:
+        validate_id(mission_id, "create", "Mission")
+        db_waypoint = WaypointConvertor.to_db(waypoint, mission_id)
+        self._session.add(db_waypoint)
+        await self._session.flush()
+        return db_waypoint.id
+
+    async def update(self, waypoint: DomWaypoint) -> None:
+        validate_id(waypoint.id, "update", "Waypoint")
+        waypoint_result = await self._session.execute(
+            select(DbWaypoint).where(DbWaypoint.id == waypoint.id)
+        )
+        db_waypoint = waypoint_result.scalar_one_or_none()
+
+        if db_waypoint is None:
+            raise ValueError(f"[update]: Waypoint with id {waypoint.id} not found")
+
+        candidate_values = {
+            "name": waypoint.name,
+            "latitude": waypoint.lat,
+            "longitude": waypoint.lon,
+            "role": waypoint.role.value,
+            "wind_speed": waypoint.wind_speed,
+            "wind_direction": waypoint.wind_direction,
+        }
+        values = {
+            field: value
+            for field, value in candidate_values.items()
+            if getattr(db_waypoint, field) != value
+        }
+
+        if values:
+            await self._session.execute(
+                update(DbWaypoint)
+                .where(DbWaypoint.id == waypoint.id)
+                .values(**values)
+            )
+        await self._session.flush()
 
     async def delete(self, waypoint_id: int) -> None:
-        await self.session.execute(
+        validate_id(waypoint_id, "delete", "Waypoint")
+        await self._session.execute(
             delete(DbWaypoint).where(DbWaypoint.id == waypoint_id)
         )
-        await self.session.flush()
+        await self._session.flush()
+
+    async def get_all_by_mission(self, mission_id: int) -> Sequence[DomWaypoint]:
+        validate_id(mission_id, "get_all", "Mission")
+        result = await self._session.execute(
+            select(DbWaypoint)
+            .options(selectinload(DbWaypoint.mission))
+            .where(DbWaypoint.mission_id == mission_id)
+        )
+        return [WaypointConvertor.to_domain(w) for w in result.scalars().all()]
 
     async def reset_all(self) -> None:
-        await self.session.execute(delete(DbWaypoint))
+        await self._session.execute(delete(DbWaypoint))
+        await self._session.flush()

@@ -1,5 +1,3 @@
-from collections.abc import AsyncGenerator
-
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -39,14 +37,4 @@ class PostgresDatabase:
         return self._session_maker
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    from uav_assistant.infra.db.settings import postgres_database
-
-    async with postgres_database.session_maker() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
 

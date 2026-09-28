@@ -6,7 +6,7 @@ from typing import Dict, Sequence, Tuple
 import numpy as np
 
 from uav_assistant.cross.sockets import TraceFn
-from uav_assistant.domain.models import AlgoSettings, Waypoint, OptimizerStep
+from uav_assistant.domain.models import AlgorithmConfiguration, Drone, Waypoint, OptimizerStep
 
 
 def _build_id2idx(points: Sequence[Waypoint]) -> Dict[int, int]:
@@ -33,16 +33,17 @@ def _route_cost(route: list[int], graph: np.ndarray, id2idx: Dict[int, int]) -> 
     return float(total)
 
 
-def run(
+def solve_path(
     points: Sequence[Waypoint],
     *,
     start_id: int,
     end_id: int,
     graph: np.ndarray,
-    settings: AlgoSettings,
+    configuration: AlgorithmConfiguration,
+    drone: Drone,
     trace: TraceFn | None = None,
 ) -> Tuple[list[int], float]:
-    obj = str(getattr(settings.objective, "value", settings.objective)).upper()
+    obj = str(getattr(configuration.objective, "value", configuration.objective)).upper()
     if obj != "DISTANCE":
         raise NotImplementedError(f"BF-perm supports only DISTANCE objective, got {obj}")
 
@@ -83,5 +84,4 @@ def run(
                         waypoint_ids=list(best_route),
                     )
                 )
-    print(f"best_cost: {best_cost}");
     return best_route, float(best_cost)

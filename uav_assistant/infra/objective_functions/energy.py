@@ -5,7 +5,7 @@ import numpy as np
 
 from uav_assistant.cross.enums import WaypointRole, INFEASIBLE_COST
 from uav_assistant.domain.metrics import distance_m, estimate_energy_wh
-from uav_assistant.domain.models import Waypoint, AlgoSettings
+from uav_assistant.domain.models import AlgorithmConfiguration, Drone, Waypoint
 
 
 
@@ -57,7 +57,7 @@ def simulate_energy_route(
         wp_prev = id2wp[prev_id]
         wp_cur = id2wp[cur_id]
 
-        dist = float(distance_m(wp_prev.position, wp_cur.position))
+        dist = float(distance_m(wp_prev, wp_cur))
         if not np.isfinite(dist) or dist < 0:
             return float("inf"), False, station_visits
 
@@ -107,7 +107,7 @@ def energy_cost(
     for a, b in zip(repaired_ids, repaired_ids[1:]):
         wp_a = id2wp[a]
         wp_b = id2wp[b]
-        d = float(distance_m(wp_a.position, wp_b.position))
+        d = float(distance_m(wp_a, wp_b))
         if not np.isfinite(d) or d < 0:
             return INFEASIBLE_COST
         total_dist += d
@@ -119,7 +119,9 @@ def build_energy_ga(
     *,
     decode: Callable[[np.ndarray], Sequence[int]],
     points: Sequence[Waypoint],
-    settings: AlgoSettings,
+    configuration: AlgorithmConfiguration,
+    drone: Drone,
+    reserve_ratio: float = 0.0,
     **kwargs,
 ) -> Callable:
     def fitness_func(ga, sol, idx):
@@ -129,9 +131,9 @@ def build_energy_ga(
         cost = energy_cost(
             route_ids=route_ids,
             id2wp=id2wp,
-            battery_wh=settings.battery_wh,
-            per_meter_wh=settings.per_meter_wh,
-            reserve_ratio=settings.reserve_ratio,
+            battery_wh=drone.battery_capacity_wh,
+            per_meter_wh=drone.per_meter_wh,
+            reserve_ratio=reserve_ratio,
         )
         if not np.isfinite(cost):
             return -INFEASIBLE_COST
@@ -145,7 +147,9 @@ def build_energy_es(
     *,
     decode: Callable[[np.ndarray], Sequence[int]],
     points: Sequence[Waypoint],
-    settings: AlgoSettings,
+    configuration: AlgorithmConfiguration,
+    drone: Drone,
+    reserve_ratio: float = 0.0,
     **kwargs,
 ) -> Callable[[np.ndarray], float]:
     def objective(x: np.ndarray) -> float:
@@ -156,9 +160,9 @@ def build_energy_es(
             energy_cost(
                 route_ids=route_ids,
                 id2wp=id2wp,
-                battery_wh=settings.battery_wh,
-                per_meter_wh=settings.per_meter_wh,
-                reserve_ratio=settings.reserve_ratio,
+                battery_wh=drone.battery_capacity_wh,
+                per_meter_wh=drone.per_meter_wh,
+                reserve_ratio=reserve_ratio,
             )
         )
 
@@ -192,7 +196,7 @@ def insert_stations_if_needed(
             wp_cur = id2wp[cur_id]
             wp_next = id2wp[next_id]
 
-            dist = float(distance_m(wp_cur.position, wp_next.position))
+            dist = float(distance_m(wp_cur, wp_next))
             needed = float(dist * per_meter_wh)
             if needed > (battery_wh - reserve):
                 return out + [next_id], False, station_visits
@@ -212,14 +216,13 @@ def insert_stations_if_needed(
             best_score = float("inf")
 
             for sid in station_ids:
-                d1 = float(distance_m(wp_cur.position, id2wp[sid].position))
+                d1 = float(distance_m(wp_cur, id2wp[sid]))
                 e1 = float(d1 * per_meter_wh)
                 x = soc - e1
-                print(x)
                 if x < reserve:
                     continue
 
-                d2 = float(distance_m(id2wp[sid].position, wp_next.position))
+                d2 = float(distance_m(id2wp[sid], wp_next))
                 score = d1 + d2
                 if score < best_score:
                     best_score = score
@@ -228,7 +231,7 @@ def insert_stations_if_needed(
             if best_sid is None:
                 return out + [next_id], False, station_visits
 
-            d1 = float(distance_m(wp_cur.position, id2wp[best_sid].position))
+            d1 = float(distance_m(wp_cur, id2wp[best_sid]))
             e1 = float(d1 * per_meter_wh)
             soc -= e1
             out.append(best_sid)

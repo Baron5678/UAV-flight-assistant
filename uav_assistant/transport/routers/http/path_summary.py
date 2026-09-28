@@ -1,4 +1,4 @@
-# uav_assistant/transport/routers/http/path_summary.py
+# uav_assistant/transport/routers/http/mission_outcome.py
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from uav_assistant.infra.db.postgre import get_session
 from uav_assistant.infra.db.repos.mission import SqlAlchemyMissionRepository
-from uav_assistant.infra.db.repos.path_summary import SqlAlchemyPathSummaryRepository
+from uav_assistant.infra.db.repos.mission_outcome import SqlAlchemyPathSummaryRepository
 from uav_assistant.app.services.path_summary import PathSummaryService, PathSummaryStats
 from uav_assistant.transport.routers.http.models import PathSummaryResponse, PathSummaryRowResponse, \
     PathSummaryStatsResponse

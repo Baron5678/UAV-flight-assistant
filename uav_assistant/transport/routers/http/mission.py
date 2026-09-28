@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from uav_assistant.app.services.mission import MissionService, CancelMissionCommand
 from uav_assistant.cross.enums import Status, ObjectiveFunction
-from uav_assistant.cross.parser import parse_literal
 from uav_assistant.domain.models import Mission
 from uav_assistant.infra.db.repos.mission import SqlAlchemyMissionRepository
 from uav_assistant.infra.db.postgre import get_session
@@ -18,7 +15,7 @@ from uav_assistant.transport.routers.http.models import (
     StartMissionResponse,
     FinishMissionRequest, CancelMissionRequest
 )
-from uav_assistant.infra.db.models import (
+from uav_assistant.infra.db.postgre.models import (
     Mission as DbMission,
     MissionWaypoint,
     Path as DbPath,

@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class Database(Protocol):
+    async def connect(self) -> None: ...
+    async def close(self) -> None: ...

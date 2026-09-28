@@ -3,7 +3,7 @@ from typing import Callable, Mapping, Sequence
 import numpy as np
 from uav_assistant.cross.enums import WaypointRole, INFEASIBLE_COST
 from uav_assistant.domain.metrics import build_id_index
-from uav_assistant.domain.models import Waypoint, AlgoSettings
+from uav_assistant.domain.models import AlgorithmConfiguration, Drone, Waypoint
 
 def select_genes(points: Sequence[Waypoint], start_id: int, end_id: int) -> list[int]:
     return [
@@ -25,10 +25,12 @@ def _deg2rad(d: float) -> float:
     return float(d) * np.pi / 180.0
 
 def _segment_unit_vector_xy_m(a: Waypoint, b: Waypoint) -> np.ndarray:
-    lat1 = float(a.position.lat)
-    lon1 = float(a.position.lon)
-    lat2 = float(b.position.lat)
-    lon2 = float(b.position.lon)
+    pos_a = getattr(a, "position", None)
+    pos_b = getattr(b, "position", None)
+    lat1 = float(pos_a.lat if pos_a is not None else a.lat)
+    lon1 = float(pos_a.lon if pos_a is not None else a.lon)
+    lat2 = float(pos_b.lat if pos_b is not None else b.lat)
+    lon2 = float(pos_b.lon if pos_b is not None else b.lon)
 
     dlat = lat2 - lat1
     dlon = lon2 - lon1
@@ -109,20 +111,21 @@ def build_weather_es(
     decode: Callable[[np.ndarray], Sequence[int]],
     graph: np.ndarray,
     points: Sequence[Waypoint],
-    settings: AlgoSettings,
+    configuration: AlgorithmConfiguration,
+    drone: Drone,
+    min_progress_mps: float = 0.5,
 ) -> Callable[[np.ndarray], float]:
     id2idx = build_id_index(points)
-    is_meteo_from = bool(getattr(settings, "wind_is_meteorological_from", True))
-    min_progress = float(getattr(settings, "min_progress_mps", 0.5))
+    is_meteo_from = True
 
     def objective(x: np.ndarray) -> float:
         sol = np.asarray(x, dtype=float)
         route = decode(sol)
         t = calculate_route_time_weather(
             route, graph, id2idx, points,
-            drone_airspeed_mps=settings.speed_mps,
+            drone_airspeed_mps=drone.speed,
             is_meteorological_from=is_meteo_from,
-            min_progress_mps=min_progress,
+            min_progress_mps=min_progress_mps,
         )
         return float(t)
 
@@ -134,20 +137,21 @@ def build_weather_ga(
     decode: Callable[[np.ndarray], Sequence[int]],
     graph: np.ndarray,
     points: Sequence[Waypoint],
-    settings: AlgoSettings,
+    configuration: AlgorithmConfiguration,
+    drone: Drone,
+    min_progress_mps: float = 0.5,
 ) -> Callable:
     id2idx = build_id_index(points)
-    is_meteo_from = bool(getattr(settings, "wind_is_meteorological_from", True))
-    min_progress = float(getattr(settings, "min_progress_mps", 0.5))
+    is_meteo_from = True
 
     def fitness_func(ga, sol, idx):
         sol = np.asarray(sol, dtype=float)
         route = decode(sol)
         t = calculate_route_time_weather(
             route, graph, id2idx, points,
-            drone_airspeed_mps=settings.speed_mps,
+            drone_airspeed_mps=drone.speed,
             is_meteorological_from=is_meteo_from,
-            min_progress_mps=min_progress,
+            min_progress_mps=min_progress_mps,
         )
 
         if not np.isfinite(t):

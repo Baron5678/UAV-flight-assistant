@@ -3,7 +3,7 @@ from typing import Callable, Mapping, Sequence
 import numpy as np
 
 from uav_assistant.cross.enums import WaypointRole, INFEASIBLE_COST
-from uav_assistant.domain.models import Waypoint, AlgoSettings
+from uav_assistant.domain.models import AlgorithmConfiguration, Drone, Waypoint
 
 
 def build_id_index(points: Sequence) -> dict[int, int]:
@@ -52,7 +52,8 @@ def build_distance_es(
         decode: Callable[[np.ndarray], Sequence[int]],
         graph: np.ndarray,
         points: Sequence[Waypoint],
-        settings: AlgoSettings,
+        configuration: AlgorithmConfiguration,
+        drone: Drone,
 ) -> Callable[[np.ndarray], float]:
     def objective(x: np.ndarray) -> float:
         id2idx = build_id_index(points)
@@ -68,7 +69,8 @@ def build_distance_ga(
         decode: Callable[[np.ndarray], Sequence[int]],
         graph: np.ndarray,
         points: Sequence[Waypoint],
-        settings: AlgoSettings,
+        configuration: AlgorithmConfiguration,
+        drone: Drone,
 ) -> Callable:
     def fitness_func(ga, sol, idx):
         id2idx = build_id_index(points)

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from uav_assistant.infra.db.postgre import get_session
 from uav_assistant.infra.db.repos.mission import SqlAlchemyMissionRepository
-from uav_assistant.infra.db.repos.path_summary import SqlAlchemyPathSummaryRepository
+from uav_assistant.infra.db.repos.mission_outcome import SqlAlchemyPathSummaryRepository
 from uav_assistant.app.services.path_summary import PathSummaryService
 
 router = APIRouter(tags=["export"])

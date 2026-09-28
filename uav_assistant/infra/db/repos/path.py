@@ -2,137 +2,91 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from sqlalchemy import select, delete, desc
-from sqlalchemy.ext.asyncio import AsyncSession
+from pymongo import ASCENDING
+from pymongo.asynchronous.database import AsyncDatabase
+
+from uav_assistant.app.interfaces import PathSnapshotRepository
 from uav_assistant.domain.models import Path as DomPath
-from uav_assistant.app.interfaces import PathRepository
-from uav_assistant.infra.db.models import Path as DbPath, PathWaypoint as DbPathWaypoint
+from uav_assistant.infra.db.repos.convertors import PathSnapshotConvertor
+from uav_assistant.infra.db.repos.validators import validate_id
 
 
-def to_domain(path_row: DbPath, waypoints_rows: Sequence[DbPathWaypoint]) -> DomPath:
-    ordered = sorted(waypoints_rows, key=lambda pp: pp.seq)
-    ids = [pp.waypoint_id for pp in ordered]
-    return DomPath(
-        waypoint_ids=ids,
-        total_distance_m=path_row.distance_m,
-        cost=path_row.cost,
-    )
+class MongoPathSnapshotRepository(PathSnapshotRepository):
+    def __init__(
+        self,
+        database: AsyncDatabase,
+        collection_name: str = "path_snapshots",
+    ) -> None:
+        self._collection = database[collection_name]
 
-class SqlAlchemyPathRepository(PathRepository):
-    def __init__(self, session: AsyncSession) -> None:
-        self.session = session
-
-    async def save(
+    async def create_many(
         self,
         mission_id: int,
-        path: DomPath,
-        generation: int | None = None,
-    ) -> DomPath:
-        gen = generation if generation is not None else 0
-
-        db_path = DbPath(
-            mission_id=mission_id,
-            generation=gen,
-            cost=path.cost or 0.0,
-            distance_m=path.total_distance_m or 0.0,
-        )
-        self.session.add(db_path)
-        await self.session.flush()
-
-        for seq, wp_id in enumerate(path.waypoint_ids, start=1):
-            self.session.add(
-                DbPathWaypoint(
-                    path_id=db_path.id,
-                    seq=seq,
-                    waypoint_id=wp_id,
-                )
-            )
-
-        return DomPath(
-            waypoint_ids=list(path.waypoint_ids),
-            total_distance_m=db_path.distance_m,
-            cost=db_path.cost,
-        )
-
-    async def get_latest_path_id(self, mission_id: int) -> int | None:
-        stmt = (
-            select(DbPath.id)
-            .where(DbPath.mission_id == mission_id)
-            .order_by(desc(DbPath.id))
-            .limit(1)
-        )
-        res = await self.session.execute(stmt)
-        return res.scalar_one_or_none()
-
-    async def get_ordered_waypoint_ids(self, path_id: int) -> list[int]:
-        stmt = (
-            select(DbPathWaypoint.waypoint_id)
-            .where(DbPathWaypoint.path_id == path_id)
-            .order_by(DbPathWaypoint.seq)
-        )
-        res = await self.session.execute(stmt)
-        return [int(x) for x in res.scalars().all()]
-
-    async def save_for_mission(self, mission_id: int, path: DomPath) -> DomPath:
-        db_path = DbPath(
-            mission_id=mission_id,
-            cost=path.cost,
-            distance_m=path.total_distance_m,
-        )
-        self.session.add(db_path)
-        await self.session.flush()
-
-        for seq, waypoint_id in enumerate(path.waypoint_ids):
-            db_pw = DbPathWaypoint(
-                path_id=db_path.id,
-                waypoint_id=waypoint_id,
-                seq=seq,
-            )
-            self.session.add(db_pw)
-
-        await self.session.flush()
-
-        stmt = select(DbPathWaypoint).where(DbPathWaypoint.path_id == db_path.id)
-        res = await self.session.execute(stmt)
-        wp_rows = res.scalars().all()
-        return to_domain(db_path, wp_rows)
-
-    async def get_by_mission(self, mission_id: int) -> list[DomPath]:
-        stmt = select(DbPath).where(DbPath.mission_id == mission_id)
-        res = await self.session.execute(stmt)
-        paths = res.scalars().all()
-
-        result: list[DomPath] = []
-        for p in paths:
-            w_stmt = select(DbPathWaypoint).where(DbPathWaypoint.path_id == p.id)
-            w_res = await self.session.execute(w_stmt)
-            wp_rows = w_res.scalars().all()
-            result.append(to_domain(p, wp_rows))
-        return result
-
-    async def get(self, path_id: int) -> DomPath:
-        stmt = select(DbPath).where(DbPath.id == path_id)
-        res = await self.session.execute(stmt)
-        db_path = res.scalar_one_or_none()
-        if db_path is None:
-            raise ValueError(f"Path {path_id} not found")
-        stmt = select(DbPathWaypoint).where(DbPathWaypoint.path_id == path_id)
-        res = await self.session.execute(stmt)
-        wp_rows = res.scalars().all()
-        return to_domain(db_path, wp_rows)
-
-    async def delete_for_mission(self, mission_id: int) -> None:
-        stmt = select(DbPath.id).where(DbPath.mission_id == mission_id)
-        res = await self.session.execute(stmt)
-        path_ids = [row[0] for row in res.all()]
-
-        if not path_ids:
+        config_id: int,
+        paths: Sequence[DomPath],
+    ) -> None:
+        validate_id(mission_id, "create_many", "Mission")
+        validate_id(config_id, "create_many", "AlgorithmConfiguration")
+        if not paths:
             return
 
-        await self.session.execute(
-            delete(DbPathWaypoint).where(DbPathWaypoint.path_id.in_(path_ids))
+        documents = [
+            PathSnapshotConvertor.to_document(mission_id, config_id, path)
+            for path in paths
+        ]
+        await self._collection.insert_many(documents)
+
+    async def get_all_by_config(self, config_id: int) -> Sequence[DomPath]:
+        validate_id(config_id, "get_all_by_config", "AlgorithmConfiguration")
+        cursor = (
+            self._collection
+            .find({"config_id": config_id})
+            .sort("generation", ASCENDING)
         )
-        await self.session.execute(
-            delete(DbPath).where(DbPath.id.in_(path_ids))
+        documents = await cursor.to_list(length=None)
+        return [PathSnapshotConvertor.to_domain(document) for document in documents]
+
+    async def get_by_generation(
+        self,
+        config_id: int,
+        generation: int,
+    ) -> DomPath:
+        validate_id(config_id, "get_by_generation", "AlgorithmConfiguration")
+        document = await self._collection.find_one(
+            {
+                "config_id": config_id,
+                "generation": generation,
+            }
         )
-        await self.session.flush()
+        if document is None:
+            raise ValueError(
+                "[get_by_generation]: "
+                f"Path with config_id {config_id} and generation {generation} not found"
+            )
+        return PathSnapshotConvertor.to_domain(document)
+
+    async def get_minimal_by_config(self, config_id: int) -> DomPath:
+        validate_id(config_id, "get_minimal_by_config", "AlgorithmConfiguration")
+        document = await self._collection.find_one(
+            {"config_id": config_id},
+            sort=[("cost", ASCENDING)],
+        )
+        if document is None:
+            raise ValueError(
+                f"[get_minimal_by_config]: Path with config_id {config_id} not found"
+            )
+        return PathSnapshotConvertor.to_domain(document)
+
+    async def delete_by_config(self, config_id: int) -> None:
+        validate_id(config_id, "delete_by_config", "AlgorithmConfiguration")
+        await self._collection.delete_many({"config_id": config_id})
+
+    async def ensure_indexes(self) -> None:
+        await self._collection.create_index(
+            [("config_id", ASCENDING), ("generation", ASCENDING)],
+            unique=True,
+        )
+        await self._collection.create_index(
+            [("config_id", ASCENDING), ("cost", ASCENDING)],
+        )
+        await self._collection.create_index("mission_id")

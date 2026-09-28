@@ -1,39 +1,35 @@
 from __future__ import annotations
-from typing import Sequence, Dict, List
-import math
+from typing import Sequence
 
 import numpy as np
 
-from .models import GeoPoint, Waypoint
+from .models import  Waypoint
 
 RADIUS_EARTH_M = 6_371_000.0
 
-def distance_m(p1: GeoPoint, p2: GeoPoint) -> float:
-    """
-    Haversine distance between two geographic coordinates in meters.
-    """
-    lon1, lat1 = math.radians(p1.lon), math.radians(p1.lat)
-    lon2, lat2 = math.radians(p2.lon), math.radians(p2.lat)
 
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
+def _lat_lon(point) -> tuple[float, float]:
+    position = getattr(point, "position", None)
+    if position is not None:
+        return float(position.lat), float(position.lon)
+    return float(point.lat), float(point.lon)
 
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+
+def distance_m(a, b) -> float:
+    lat1, lon1 = _lat_lon(a)
+    lat2, lon2 = _lat_lon(b)
+
+    lat1_rad = np.radians(lat1)
+    lat2_rad = np.radians(lat2)
+    dlat = np.radians(lat2 - lat1)
+    dlon = np.radians(lon2 - lon1)
+
+    haversine = (
+        np.sin(dlat / 2) ** 2
+        + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2) ** 2
     )
-    c = 2 * math.asin(math.sqrt(a))
-    return RADIUS_EARTH_M * c
-
-def distance_h(w1: "Waypoint", w2: "Waypoint") -> float:
-    lon1, lat1 = math.radians(w1.position.lon), math.radians(w1.position.lat)
-    lon2, lat2 = math.radians(w2.position.lon), math.radians(w2.position.lat)
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.asin(math.sqrt(a))
-    return RADIUS_EARTH_M * c
-
+    central_angle = 2 * np.arcsin(np.sqrt(haversine))
+    return float(RADIUS_EARTH_M * central_angle)
 
 def travel_time_s(distance_m_val: float, speed_mps: float) -> float:
     if speed_mps <= 0:
@@ -42,26 +38,9 @@ def travel_time_s(distance_m_val: float, speed_mps: float) -> float:
 
 
 def estimate_energy_wh(distance_m_val: float, per_meter_wh: float) -> float:
+    if per_meter_wh < 0:
+        raise ValueError("per_meter_wh must be non-negative")
     return distance_m_val * per_meter_wh
-
-
-def mse(y: Sequence[float], y_predicted: Sequence[float]) -> float:
-    if len(y) != len(y_predicted):
-        raise ValueError("y and y_predicted must have the same length")
-
-    if not y:
-        return 0.0
-
-    err_sum = 0.0
-    for actual, pred in zip(y, y_predicted):
-        diff = actual - pred
-        err_sum += diff * diff
-
-    return err_sum / len(y)
-
-
-def coords_by_id(waypoints: Sequence[Waypoint]) -> Dict[int, GeoPoint]:
-    return {w.id: w.position for w in waypoints}
 
 
 def build_distance_matrix(points: list["Waypoint"]) -> np.ndarray:
@@ -69,7 +48,7 @@ def build_distance_matrix(points: list["Waypoint"]) -> np.ndarray:
     graph = np.zeros((n, n), dtype=float)
     for i in range(n):
         for j in range(i+1, n):
-            d = distance_h(points[i],points[j])
+            d = distance_m(points[i], points[j])
             graph[i, j] = graph[j, i] = d
     return graph
 

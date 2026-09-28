@@ -1,66 +1,97 @@
-# uav_assistant/infra/db/repos/path_summary.py
-
 from __future__ import annotations
 
-from typing import Sequence
-
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from uav_assistant.app.interfaces import PathSummaryRepository
-from uav_assistant.domain.models import PathSummary as DomPathSummary
-from uav_assistant.infra.db.models import PathSummary as DbPathSummary
+from uav_assistant.app.interfaces import MissionOutcomeRepository
+from uav_assistant.domain.models import MissionOutcome as DomMissionOutcome
+from uav_assistant.infra.db.postgre.models import MissionOutcome as DbMissionOutcome
+from uav_assistant.infra.db.repos.convertors import MissionOutcomeConvertor, AlgorithmConfigurationConvertor
+from uav_assistant.infra.db.postgre.models import AlgorithmConfiguration as DbAlgorithmConfig
+from uav_assistant.infra.db.repos.utils import patch_update
+from uav_assistant.infra.db.repos.validators import validate_id
 
 
-class SqlAlchemyPathSummaryRepository(PathSummaryRepository):
+class SqlAlchemyMissionOutcomeRepository(MissionOutcomeRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def add(self, summary: DomPathSummary) -> None:
-        row = DbPathSummary(
-            mission_id=int(summary.mission_id),
-            generation=int(summary.generation),
-            cost=float(summary.cost),
-            total_distance_m=float(summary.total_distance_m),
+    async def get(self, config_id: int) -> DomMissionOutcome:
+        validate_id(config_id, "get", "AlgorithmConfiguration")
+        mission_outcome_res = await self._session.execute(
+            select(DbMissionOutcome).
+            where(DbMissionOutcome.config_id == config_id)
         )
-        self._session.add(row)
-        await self._session.flush()
 
-    async def add_many(self, summaries: Sequence[DomPathSummary]) -> None:
-        if not summaries:
+        config_res = await self._session.execute(
+            select(DbAlgorithmConfig)
+            .options(selectinload(DbAlgorithmConfig.mission))
+            .where(DbAlgorithmConfig.id == config_id)
+        )
+
+        mission_outcome = mission_outcome_res.scalar_one_or_none()
+        if mission_outcome is None:
+            raise ValueError(f"[get]: MissionOutcome with config_id {config_id} not found")
+        config = config_res.scalar_one_or_none()
+        if config is None:
+            raise ValueError(f"[get]: AlgorithmConfiguration with id {config_id} not found")
+
+        return MissionOutcomeConvertor.to_domain(
+            mission_outcome,
+            AlgorithmConfigurationConvertor.to_domain(config),
+        )
+
+    async def create(self, config_id: int, outcome: DomMissionOutcome) -> int:
+        validate_id(config_id, "create", "AlgorithmConfiguration")
+        db_outcome = MissionOutcomeConvertor.to_db(outcome, config_id)
+        self._session.add(db_outcome)
+        await self._session.flush()
+        return db_outcome.id
+
+    async def update(
+            self,
+            config_id: int,
+            outcome: DomMissionOutcome,
+    ) -> None:
+        validate_id(config_id, "update", "AlgorithmConfiguration")
+
+        result = await self._session.execute(
+            select(DbMissionOutcome)
+            .where(DbMissionOutcome.config_id == config_id)
+        )
+
+        db_outcome = result.scalar_one_or_none()
+
+        if db_outcome is None:
+            raise ValueError(
+                f"[update]: MissionOutcome with config_id {config_id} not found"
+            )
+
+        excluded = {
+            "id",
+            "config_id",
+            "mongo_result_id",
+        }
+
+        values = patch_update(DbMissionOutcome.__mapper__.columns, excluded, db_outcome, outcome)
+
+        if values is None:
             return
-        rows = [
-            DbPathSummary(
-                mission_id=int(s.mission_id),
-                generation=int(s.generation),
-                cost=float(s.cost),
-                total_distance_m=float(s.total_distance_m),
-            )
-            for s in summaries
-        ]
-        self._session.add_all(rows)
-        await self._session.flush()
 
-    async def list_by_mission(self, mission_id: int) -> list[DomPathSummary]:
-        stmt = (
-            select(DbPathSummary)
-            .where(DbPathSummary.mission_id == int(mission_id))
-            .order_by(DbPathSummary.generation.asc())
-        )
-        res = await self._session.execute(stmt)
-        rows = res.scalars().all()
-        return [
-            DomPathSummary(
-                mission_id=int(r.mission_id),
-                generation=int(r.generation),
-                cost=float(r.cost),
-                total_distance_m=float(r.total_distance_m),
-            )
-            for r in rows
-        ]
-
-    async def delete_for_mission(self, mission_id: int) -> None:
         await self._session.execute(
-            delete(DbPathSummary).where(DbPathSummary.mission_id == int(mission_id))
+            update(DbMissionOutcome)
+            .where(DbMissionOutcome.config_id == config_id)
+            .values(**values)
+        )
+
+        await self._session.flush()
+
+    async def delete(self, config_id: int) -> None:
+        validate_id(config_id, "delete", "AlgorithmConfiguration")
+        await self._session.execute(
+            delete(DbMissionOutcome).where(DbMissionOutcome.config_id == config_id)
         )
         await self._session.flush()
+
+
